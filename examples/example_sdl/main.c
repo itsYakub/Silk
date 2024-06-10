@@ -21,8 +21,6 @@ int main(int argc, const string argv[]) {
         600
     );
 
-    vec2i mouse_position = { 0 };
-
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         silkLogErr("SDL: Couldn't initialize SDL.");
         silkPixelBufferFree(&buffer);
@@ -92,34 +90,20 @@ int main(int argc, const string argv[]) {
                 case SDL_QUIT: {
                     exit = true;
                 } break;
-
-                case SDL_MOUSEMOTION: {
-                    mouse_position = (vec2i) {
-                        .x = event.motion.x,
-                        .y = event.motion.y
-                    };
-                } break;
             }
         }
 
         silkClearPixelBufferColor(&buffer, 0xffffffff);
-        silkDrawCircle(
+        
+        silkDrawTriangleEquilateral(
             &buffer, 
             (vec2i) {
                 buffer.size.x / 2.0f,
-                buffer.size.y / 2.0f
-            }, 
-            100, 
+                buffer.size.y / 2.0
+            },
+            128,
             0xff0000ff
         );
-
-        silkDrawCircle(
-            &buffer, 
-            mouse_position,
-            50, 
-            0xaa00ff00
-        );
-
         
         SDL_Rect source_rect = {
             0,

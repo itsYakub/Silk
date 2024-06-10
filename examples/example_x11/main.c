@@ -95,12 +95,6 @@ int main(int argc, const string argv[]) {
 
     silkLogInfo("X11: New window protocol: WM_DELETE_WINDOW.");
 
-    XSelectInput(
-        x11_display, 
-        x11_window, 
-        KeyPressMask | PointerMotionMask
-    );
-
     bool quit = false;
     while(!quit) {
         while(XPending(x11_display) > 0) {

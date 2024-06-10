@@ -9,7 +9,7 @@
 int main(int argc, const string argv[]) {
     string file_path = "output.ppm";
     pixel_buffer buffer = silkCreatePixelBuffer(
-        800, 
+        800,
         600
     );
 
@@ -17,11 +17,8 @@ int main(int argc, const string argv[]) {
 
     silkDrawCircle(
         &buffer, 
-        (vec2i) { 
-            buffer.size.x / 2.0f,
-            buffer.size.y / 2.0f
-        }, 
-        128,
+        (vec2i) { buffer.size.x / 2.0, buffer.size.y / 2.0f }, 
+        buffer.size.y / 4, 
         0xff0000ff
     );
     

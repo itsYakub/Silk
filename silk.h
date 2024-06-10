@@ -17,6 +17,7 @@
 //
 // - SILK_ENABLE_ALPHABLEND:
 //      Enables alpha-blending.
+//      NOTE: This macro is defined by default. You can disable it by defining 'SILK_DISABLE_ALPHABLEND'.
 //
 // - SILK_DISABLE_ALPHABLEND:
 //      Disables alpha-blending.
@@ -70,11 +71,15 @@
 #define SILK_SUCCESS 0 // SILK_SUCCESS: returned if the function was executed successfully
 #define SILK_FAILURE 1 // SILK_FAILURE: returned if there was a problem during the function execution
 
-#ifndef SILK_PIXELBUFFER_WIDTH
+#if !defined (SILK_DISABLE_ALPHABLEND)
+    #define SILK_ENABLE_ALPHABLEND
+#endif
+
+#if !defined(SILK_PIXELBUFFER_WIDTH)
     #define SILK_PIXELBUFFER_WIDTH 1920 // SILK_PIXELBUFFER_WIDTH: Default Full HD monitor width
 #endif // SILK_PIXELBUFFER_WIDTH
 
-#ifndef SILK_PIXELBUFFER_HEIGHT
+#if !defined(SILK_PIXELBUFFER_HEIGHT)
     #define SILK_PIXELBUFFER_HEIGHT 1080 // SILK_PIXELBUFFER_HEIGHT: Default Full HD monitor height
 #endif // SILK_PIXELBUFFER_HEIGHT
 
@@ -130,10 +135,19 @@ SILK_API pixel silkAplhaBlend(pixel base_pixel, pixel return_pixel, color_channe
 // --------------------------------------------------------------------------------------------------------------------------------
 
 SILK_API i32 silkDrawPixel(pixel_buffer* buf, vec2i position, pixel pix);
+
 SILK_API i32 silkDrawLine(pixel_buffer* buf, vec2i start, vec2i end, pixel pix);
+
 SILK_API i32 silkDrawRect(pixel_buffer* buf, vec2i position, vec2i size, pixel pix);
+SILK_API i32 silkDrawRectLines(pixel_buffer* buf, vec2i position, vec2i size, pixel pix);
+
 SILK_API i32 silkDrawCircle(pixel_buffer* buf, vec2i position, i32 radius, pixel pix);
+
 SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateral(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix);
+
+SILK_API i32 silkDrawTriangleLines(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateralLines(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Logging
@@ -142,6 +156,13 @@ SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, v
 SILK_API i32 silkLogInfo(const string text, ...);
 SILK_API i32 silkLogWarn(const string text, ...);
 SILK_API i32 silkLogErr(const string text, ...);
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SUB-SECTION: Math
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API i32 silkVectorSwap(vec2i* a, vec2i* b);
+SILK_API i32 silkIntSwap(i32* a, i32* b);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Implementation
@@ -375,22 +396,6 @@ SILK_API i32 silkDrawPixel(pixel_buffer* buf, vec2i position, pixel pix) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRect(pixel_buffer* buf, vec2i position, vec2i size, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
-        
-        return SILK_FAILURE;
-    }
-
-    for(i32 y = 0; y < size.y; y++) {
-        for(i32 x = 0; x < size.x; x++) {
-            silkDrawPixel(buf, (vec2i) { position.x + x, position.y + y}, pix);
-        }
-    }
-
-    return SILK_SUCCESS;
-}
-
 SILK_API i32 silkDrawLine(pixel_buffer* buf, vec2i start, vec2i end, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
@@ -427,6 +432,37 @@ SILK_API i32 silkDrawLine(pixel_buffer* buf, vec2i start, vec2i end, pixel pix) 
     return SILK_SUCCESS;
 }
 
+SILK_API i32 silkDrawRect(pixel_buffer* buf, vec2i position, vec2i size, pixel pix) {
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
+    }
+
+    for(i32 y = 0; y < size.y; y++) {
+        for(i32 x = 0; x < size.x; x++) {
+            silkDrawPixel(buf, (vec2i) { position.x + x, position.y + y}, pix);
+        }
+    }
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawRectLines(pixel_buffer* buf, vec2i position, vec2i size, pixel pix) {
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
+    }
+
+    silkDrawLine(buf, (vec2i) { position.x, position.y }, (vec2i) { position.x + size.x, position.y }, pix);
+    silkDrawLine(buf, (vec2i) { position.x, position.y }, (vec2i) { position.x, position.y + size.y }, pix);
+    silkDrawLine(buf, (vec2i) { position.x + size.x, position.y }, (vec2i) { position.x + size.x, position.y + size.y }, pix);
+    silkDrawLine(buf, (vec2i) { position.x, position.y + size.y }, (vec2i) { position.x + size.x, position.y + size.y }, pix);
+
+    return SILK_SUCCESS;
+}
+
 SILK_API i32 silkDrawCircle(pixel_buffer* buf, vec2i position, i32 radius, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
@@ -442,10 +478,12 @@ SILK_API i32 silkDrawCircle(pixel_buffer* buf, vec2i position, i32 radius, pixel
 
     for(i32 y = y0; y < y1; y++) {
         for(i32 x = x0; x < x1; x++) {
-            i32 x_delta = x - position.x;
-            i32 y_delta = y - position.y;
+            vec2i delta = {
+                x - position.x,
+                y - position.y
+            };
 
-            if((x_delta * x_delta) + (y_delta * y_delta) <= (radius * radius)) {
+            if((delta.x * delta.x) + (delta.y * delta.y) <= (radius * radius)) {
                 silkDrawPixel(buf, (vec2i) { x, y }, pix);
             }
         }
@@ -455,9 +493,157 @@ SILK_API i32 silkDrawCircle(pixel_buffer* buf, vec2i position, i32 radius, pixel
 }
 
 SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
+    // Source:
+    // https://github.com/tsoding/olive.c/commit/633c657dbea3435a64114570ecb3f703fa276f28
+
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
+    }
+
+    if(point_a.y > point_b.y) silkVectorSwap(&point_a, &point_b);
+    if(point_a.y > point_c.y) silkVectorSwap(&point_a, &point_c);
+    if(point_b.y > point_c.y) silkVectorSwap(&point_b, &point_c);
+    
+    vec2i delta_vector_ab = {
+        point_b.x - point_a.x,
+        point_b.y - point_a.y
+    };
+
+    vec2i delta_vector_ac = {
+        point_c.x - point_a.x,
+        point_c.y - point_a.y
+    };
+
+    vec2i delta_vector_cb = {
+        point_b.x - point_c.x,
+        point_b.y - point_c.y
+    };
+
+    vec2i delta_vector_ca = {
+        point_a.x - point_c.x,
+        point_a.y - point_c.y
+    };
+
+    for(i32 y = point_a.y; y < point_b.y; y++) {
+        if(y > 0 && y < buf->size.y) {
+            i32 s1 = delta_vector_ab.y != 0 ? 
+                (y - point_a.y) * delta_vector_ab.x / delta_vector_ab.y + point_a.x : 
+                point_a.x;
+
+            i32 s2 = delta_vector_ac.y != 0 ? 
+                (y - point_a.y) * delta_vector_ac.x / delta_vector_ac.y + point_a.x : 
+                point_a.x;
+
+            if(s1 > s2) {
+                silkIntSwap(&s1, &s2);
+            }
+
+            for(i32 x = s1; x < s2; x++) {
+                if (x > 0 && x < buf->size.x) {
+                    silkDrawPixel(buf, (vec2i) { x, y }, pix);
+                }
+            }
+        }
+    }
+
+    for(i32 y = point_b.y; y < point_c.y; y++) {
+        if(y > 0 && y < buf->size.y) {
+            i32 s1 = delta_vector_cb.y != 0 ? 
+                (y - point_c.y) * delta_vector_cb.x / delta_vector_cb.y + point_c.x : 
+                point_c.x;
+
+            i32 s2 = delta_vector_ca.y != 0 ? 
+                (y - point_c.y) * delta_vector_ca.x / delta_vector_ca.y + point_c.x : 
+                point_c.x;
+
+            if(s1 > s2) {
+                silkIntSwap(&s1, &s2);
+            }
+
+            for(i32 x = s1; x < s2; x++) {
+                if (x > 0 && x < buf->size.x) {
+                    silkDrawPixel(buf, (vec2i) { x, y }, pix);
+                }
+            }
+        }
+    }
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawTriangleEquilateral(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix) {
+    // Source:
+    // https://www.quora.com/How-do-you-calculate-the-triangle-vertices-coordinates-on-a-circumcircle-triangle-with-a-given-centre-point-and-radius-Assuming-the-triangle-is-acute-with-all-equal-length-sides-and-that-one-point-is-straight-up
+
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
+    }
+
+    vec2i point_a = {
+        midpoint.x,
+        midpoint.y - radius
+    };
+
+    vec2i point_b = {
+        midpoint.x - sqrt(3) * radius / 2,
+        midpoint.y + radius / 2
+    };
+
+    vec2i point_c = {
+        midpoint.x + sqrt(3) * radius / 2,
+        midpoint.y + radius / 2
+    };
+
+    silkDrawTriangle(buf, point_a, point_b, point_c, pix);
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawTriangleLines(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
+    }
+
+    if(point_a.y > point_b.y) silkVectorSwap(&point_a, &point_b);
+    if(point_a.y > point_c.y) silkVectorSwap(&point_a, &point_c);
+    if(point_b.y > point_c.y) silkVectorSwap(&point_b, &point_c);
+
     silkDrawLine(buf, point_a, point_b, pix);
     silkDrawLine(buf, point_b, point_c, pix);
-    silkDrawLine(buf, point_c, point_a, pix);
+    silkDrawLine(buf, point_a, point_c, pix);
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawTriangleEquilateralLines(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix) {
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
+    }
+
+    vec2i point_a = {
+        midpoint.x,
+        midpoint.y - radius
+    };
+
+    vec2i point_b = {
+        midpoint.x - sqrt(3) * radius / 2,
+        midpoint.y + radius / 2
+    };
+
+    vec2i point_c = {
+        midpoint.x + sqrt(3) * radius / 2,
+        midpoint.y + radius / 2
+    };
+
+    silkDrawTriangleLines(buf, point_a, point_b, point_c, pix);
 
     return SILK_SUCCESS;
 }
@@ -540,6 +726,27 @@ SILK_API i32 silkLogErr(const string text, ...) {
     va_end(list);
 
     fprintf(stdout, "[ERR] %s\n", buf);
+
+    return SILK_SUCCESS;
+}
+
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SUB-SECTION: Math
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API i32 silkVectorSwap(vec2i* a, vec2i* b) {
+    vec2i temp = *a;
+    *a = *b;
+    *b = temp;
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkIntSwap(i32* a, i32* b) {
+    i32 temp = *a;
+    *a = *b;
+    *b = temp;
 
     return SILK_SUCCESS;
 }
