@@ -12,18 +12,17 @@
 #include "bin/_deps/sdl2-src/include/SDL_render.h"
 #include "bin/_deps/sdl2-src/include/SDL_video.h"
 
+#define SILK_PIXELBUFFER_WIDTH 800
+#define SILK_PIXELBUFFER_HEIGHT 600
+
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
 int main(int argc, const string argv[]) {
-    pixel_buffer buffer = silkCreatePixelBuffer(
-        800, 
-        600
-    );
+    pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         silkLogErr("SDL: Couldn't initialize SDL.");
-        silkPixelBufferFree(&buffer);
         return SILK_FAILURE;
     }
 
@@ -40,7 +39,6 @@ int main(int argc, const string argv[]) {
 
     if(!sdl_window) {
         silkLogErr("SDL: Couldn't create an SDL Window.");
-        silkPixelBufferFree(&buffer);
         SDL_Quit();
         return SILK_FAILURE;
     }
@@ -55,7 +53,6 @@ int main(int argc, const string argv[]) {
 
     if(!sdl_renderer) {
         silkLogErr("SDL: Couldn't create an SDL Renderer.");
-        silkPixelBufferFree(&buffer);
         SDL_DestroyWindow(sdl_window);
         SDL_Quit();
         return SILK_FAILURE;
@@ -73,7 +70,6 @@ int main(int argc, const string argv[]) {
 
     if(!sdl_texture) {
         silkLogErr("SDL: Couldn't create an SDL Texture.");
-        silkPixelBufferFree(&buffer);
         SDL_DestroyRenderer(sdl_renderer);
         SDL_DestroyWindow(sdl_window);
         SDL_Quit();
@@ -93,14 +89,11 @@ int main(int argc, const string argv[]) {
             }
         }
 
-        silkClearPixelBufferColor(&buffer, 0xffffffff);
+        silkClearPixelBufferColor(buffer, 0xffffffff);
         
         silkDrawTriangleEquilateral(
-            &buffer, 
-            (vec2i) {
-                buffer.size.x / 2.0f,
-                buffer.size.y / 2.0
-            },
+            buffer, 
+            (vec2i) { SILK_PIXELBUFFER_WIDTH / 2, SILK_PIXELBUFFER_HEIGHT / 2 },
             128,
             0xff0000ff
         );
@@ -108,22 +101,22 @@ int main(int argc, const string argv[]) {
         SDL_Rect source_rect = {
             0,
             0,
-            buffer.size.x,
-            buffer.size.y
+            SILK_PIXELBUFFER_WIDTH,
+            SILK_PIXELBUFFER_HEIGHT
         };
 
         SDL_Rect destination_rect = {
             0,
             0,
-            buffer.size.x,
-            buffer.size.y
+            SILK_PIXELBUFFER_WIDTH,
+            SILK_PIXELBUFFER_HEIGHT
         };
 
         SDL_UpdateTexture(
             sdl_texture,
             &source_rect,
-            buffer.buffer, 
-            buffer.size.x * sizeof(pixel)
+            buffer, 
+            SILK_PIXELBUFFER_WIDTH * sizeof(pixel)
         );
 
         SDL_RenderCopyEx(
@@ -143,8 +136,6 @@ int main(int argc, const string argv[]) {
     SDL_DestroyRenderer(sdl_renderer);
     SDL_DestroyWindow(sdl_window);
     SDL_Quit();
-
-    silkPixelBufferFree(&buffer);
 
     return 0;
 }

@@ -1,14 +1,15 @@
 // Compilation command:
 // cc main.c -o example.out -lX11
 
-#define SILK_IMPLEMENTATION
-#include "../../silk.h"
-
 #include <X11/Xlib.h>   // X11 Window Library / Protocol
 #include <stdbool.h>    // Required for: 'bool quit;'
 
+#define SILK_IMPLEMENTATION
+#include "../../silk.h"
+
+
 int main(int argc, const string argv[]) {
-    pixel_buffer buffer = silkCreatePixelBufferDefault();
+    pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
     Display* x11_display = XOpenDisplay(NULL);
     if(!x11_display) {
@@ -66,11 +67,11 @@ int main(int argc, const string argv[]) {
         x11_window_attributes.depth, 
         ZPixmap, 
         0, 
-        (char*) buffer.buffer, 
-        buffer.size.x, 
-        buffer.size.y, 
+        (char*) buffer, 
+        SILK_PIXELBUFFER_WIDTH, 
+        SILK_PIXELBUFFER_HEIGHT, 
         32, 
-        buffer.size.x * sizeof(pixel)
+        SILK_PIXELBUFFER_WIDTH * sizeof(pixel)
     );
 
     GC x11_graphics_context = XCreateGC(
@@ -117,7 +118,7 @@ int main(int argc, const string argv[]) {
         );
 
         silkClearPixelBufferColorRegion(
-            &buffer, 
+            buffer, 
             (vec2i) {
                 x11_window_attributes.width,
                 x11_window_attributes.height
@@ -126,7 +127,7 @@ int main(int argc, const string argv[]) {
         );
 
         silkDrawCircle(
-            &buffer, 
+            buffer, 
             (vec2i) {
                 x11_window_attributes.width / 2.0f,
                 x11_window_attributes.height / 2.0f
@@ -144,13 +145,12 @@ int main(int argc, const string argv[]) {
             0, 
             0, 
             0, 
-            buffer.size.x, 
-            buffer.size.y
+            SILK_PIXELBUFFER_WIDTH, 
+            SILK_PIXELBUFFER_HEIGHT
         );
     }
 
     XCloseDisplay(x11_display);
-    silkPixelBufferFree(&buffer);
 
     return 0;
 }

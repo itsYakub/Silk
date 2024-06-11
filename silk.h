@@ -83,6 +83,14 @@
     #define SILK_PIXELBUFFER_HEIGHT 1080 // SILK_PIXELBUFFER_HEIGHT: Default Full HD monitor height
 #endif // SILK_PIXELBUFFER_HEIGHT
 
+#if !defined(SILK_PIXELBUFFER_WIDTH)
+    #define SILK_PIXELBUFFER_WIDTH 1920 // SILK_PIXELBUFFER_WIDTH: Default Full HD monitor width
+#endif // SILK_PIXELBUFFER_WIDTH
+
+#if !defined(SILK_PIXELBUFFER_HEIGHT)
+    #define SILK_PIXELBUFFER_HEIGHT 1080 // SILK_PIXELBUFFER_HEIGHT: Default Full HD monitor height
+#endif // SILK_PIXELBUFFER_HEIGHT
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Typedefs
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -98,7 +106,6 @@ typedef struct { u8 r; u8 g; u8 b; u8 a; }              color;
 
 typedef u8                                              color_channel;
 typedef u32                                             pixel;
-typedef struct { pixel* buffer; vec2i size; }           pixel_buffer;
 
 
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -109,18 +116,13 @@ typedef struct { pixel* buffer; vec2i size; }           pixel_buffer;
 // SUB-SECTION: Pixel buffer
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API pixel_buffer silkCreatePixelBuffer(u32 width, u32 height);
-SILK_API pixel_buffer silkCreatePixelBufferDefault();
+SILK_API i32 silkClearPixelBuffer(pixel* buf);
+SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i region);
+SILK_API i32 silkClearPixelBufferColor(pixel* buf, pixel pix);
+SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i region, pixel pix);
 
-SILK_API i32 silkPixelBufferFree(pixel_buffer* buf);
-
-SILK_API i32 silkClearPixelBuffer(pixel_buffer* buf);
-SILK_API i32 silkClearPixelBufferRegion(pixel_buffer* buf, vec2i region);
-SILK_API i32 silkClearPixelBufferColor(pixel_buffer* buf, pixel pix);
-SILK_API i32 silkClearPixelBufferColorRegion(pixel_buffer* buf, vec2i region, pixel pix);
-
-SILK_API pixel silkGetPixel(pixel_buffer* buf, vec2i position);
-SILK_API i32 silkSetPixel(pixel_buffer* buf, vec2i position, pixel pix);
+SILK_API pixel silkGetPixel(pixel* buf, vec2i position);
+SILK_API i32 silkSetPixel(pixel* buf, vec2i position, pixel pix);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Pixels and Colors
@@ -134,20 +136,20 @@ SILK_API pixel silkAplhaBlend(pixel base_pixel, pixel return_pixel, color_channe
 // SUB-SECTION: Rendering
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API i32 silkDrawPixel(pixel_buffer* buf, vec2i position, pixel pix);
+SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix);
 
-SILK_API i32 silkDrawLine(pixel_buffer* buf, vec2i start, vec2i end, pixel pix);
+SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix);
 
-SILK_API i32 silkDrawRect(pixel_buffer* buf, vec2i position, vec2i size, pixel pix);
-SILK_API i32 silkDrawRectLines(pixel_buffer* buf, vec2i position, vec2i size, pixel pix);
+SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, pixel pix);
+SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, pixel pix);
 
-SILK_API i32 silkDrawCircle(pixel_buffer* buf, vec2i position, i32 radius, pixel pix);
+SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix);
 
-SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
-SILK_API i32 silkDrawTriangleEquilateral(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix);
+SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, pixel pix);
 
-SILK_API i32 silkDrawTriangleLines(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
-SILK_API i32 silkDrawTriangleEquilateralLines(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix);
+SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i midpoint, i32 radius, pixel pix);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Logging
@@ -206,52 +208,21 @@ SILK_API i32 silkIntSwap(i32* a, i32* b);
 // SUB-SECTION: Pixel buffer
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API pixel_buffer silkCreatePixelBuffer(u32 width, u32 height) {
-    pixel_buffer result = {
-        .buffer = (pixel*) calloc(width * height, sizeof(pixel)),
-        .size = { width, height }
-    };
-
-    silkLogInfo("PIXEL_BUFFER: New pixel buffer: %ix%i", width, height);
-
-    return result;
-}
-
-SILK_API pixel_buffer silkCreatePixelBufferDefault() {
-    pixel_buffer result = silkCreatePixelBuffer(SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT);
-
-    return result;
-}
-
-SILK_API i32 silkPixelBufferFree(pixel_buffer* buf) {
-    if(!buf->buffer) {
-        silkLogErr("Passed the invalid pixel buffer.");
-
-        return SILK_FAILURE;
-    }
-
-    silkLogInfo("PIXEL_BUFFER: Unloading the pixel buffer.");
-
-    free(buf->buffer);
-
-    return SILK_SUCCESS;
-}
-
-SILK_API i32 silkClearPixelBuffer(pixel_buffer* buf) {
+SILK_API i32 silkClearPixelBuffer(pixel* buf) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
         return SILK_FAILURE;
     }
 
-    for(i32 pixel = 0; pixel < buf->size.x * buf->size.y; pixel++) {
-        buf->buffer[pixel] = 0;
+    for(i32 pixel_index = 0; pixel_index < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; pixel_index++) {
+        buf[pixel_index] = 0;
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkClearPixelBufferRegion(pixel_buffer* buf, vec2i region) {
+SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i region) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
@@ -267,21 +238,21 @@ SILK_API i32 silkClearPixelBufferRegion(pixel_buffer* buf, vec2i region) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkClearPixelBufferColor(pixel_buffer* buf, pixel pix) {
+SILK_API i32 silkClearPixelBufferColor(pixel* buf, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
         return SILK_FAILURE;
     }
 
-    for(i32 pixel = 0; pixel < buf->size.x * buf->size.y; pixel++) {
-        buf->buffer[pixel] = pix;
+    for(i32 pixel_index = 0; pixel_index < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; pixel_index++) {
+        buf[pixel_index] = pix;
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkClearPixelBufferColorRegion(pixel_buffer* buf, vec2i region, pixel pix) {
+SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i region, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
@@ -297,24 +268,24 @@ SILK_API i32 silkClearPixelBufferColorRegion(pixel_buffer* buf, vec2i region, pi
     return SILK_SUCCESS;
 }
 
-SILK_API pixel silkGetPixel(pixel_buffer* buf, vec2i position) {
+SILK_API pixel silkGetPixel(pixel* buf, vec2i position) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
         return 0xffffffff;
     }
 
-    return buf->buffer[position.y * buf->size.x + position.x];
+    return buf[position.y * SILK_PIXELBUFFER_WIDTH + position.x];
 }
 
-SILK_API i32 silkSetPixel(pixel_buffer* buf, vec2i position, pixel pix) {
+SILK_API i32 silkSetPixel(pixel* buf, vec2i position, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
         return SILK_FAILURE;
     }
 
-    buf->buffer[position.y * buf->size.x + position.x] = pix;
+    buf[position.y * SILK_PIXELBUFFER_WIDTH + position.x] = pix;
 
     return SILK_SUCCESS;
 }
@@ -363,15 +334,15 @@ SILK_API pixel silkAplhaBlend(pixel base_pixel, pixel return_pixel, color_channe
 // SUB-SECTION: Rendering
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API i32 silkDrawPixel(pixel_buffer* buf, vec2i position, pixel pix) {
+SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
         return SILK_FAILURE;
     }
 
-    if( (position.x < 0 || position.x >= buf->size.x) ||
-        (position.y < 0 || position.y >= buf->size.y)) {
+    if( (position.x < 0 || position.x >= SILK_PIXELBUFFER_WIDTH) ||
+        (position.y < 0 || position.y >= SILK_PIXELBUFFER_HEIGHT)) {
         return SILK_FAILURE;
     }
 
@@ -384,7 +355,7 @@ SILK_API i32 silkDrawPixel(pixel_buffer* buf, vec2i position, pixel pix) {
 #if !defined(SILK_DISABLE_ALPHABLEND) || defined(SILK_ENABLE_ALPHABLEND)
 
     pix = silkAplhaBlend(
-        buf->buffer[position.y * buf->size.x + position.x], 
+        silkGetPixel(buf, position), 
         pix, 
         silkPixelToColor(pix).a
     );
@@ -396,7 +367,7 @@ SILK_API i32 silkDrawPixel(pixel_buffer* buf, vec2i position, pixel pix) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawLine(pixel_buffer* buf, vec2i start, vec2i end, pixel pix) {
+SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
@@ -432,7 +403,7 @@ SILK_API i32 silkDrawLine(pixel_buffer* buf, vec2i start, vec2i end, pixel pix) 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRect(pixel_buffer* buf, vec2i position, vec2i size, pixel pix) {
+SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
         
@@ -448,7 +419,7 @@ SILK_API i32 silkDrawRect(pixel_buffer* buf, vec2i position, vec2i size, pixel p
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRectLines(pixel_buffer* buf, vec2i position, vec2i size, pixel pix) {
+SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
         
@@ -463,7 +434,7 @@ SILK_API i32 silkDrawRectLines(pixel_buffer* buf, vec2i position, vec2i size, pi
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawCircle(pixel_buffer* buf, vec2i position, i32 radius, pixel pix) {
+SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
         
@@ -492,7 +463,7 @@ SILK_API i32 silkDrawCircle(pixel_buffer* buf, vec2i position, i32 radius, pixel
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
+SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
     // Source:
     // https://github.com/tsoding/olive.c/commit/633c657dbea3435a64114570ecb3f703fa276f28
 
@@ -527,7 +498,7 @@ SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, v
     };
 
     for(i32 y = point_a.y; y < point_b.y; y++) {
-        if(y > 0 && y < buf->size.y) {
+        if(y > 0 && y < SILK_PIXELBUFFER_HEIGHT) {
             i32 s1 = delta_vector_ab.y != 0 ? 
                 (y - point_a.y) * delta_vector_ab.x / delta_vector_ab.y + point_a.x : 
                 point_a.x;
@@ -541,7 +512,7 @@ SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, v
             }
 
             for(i32 x = s1; x < s2; x++) {
-                if (x > 0 && x < buf->size.x) {
+                if (x > 0 && x < SILK_PIXELBUFFER_WIDTH) {
                     silkDrawPixel(buf, (vec2i) { x, y }, pix);
                 }
             }
@@ -549,7 +520,7 @@ SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, v
     }
 
     for(i32 y = point_b.y; y < point_c.y; y++) {
-        if(y > 0 && y < buf->size.y) {
+        if(y > 0 && y < SILK_PIXELBUFFER_HEIGHT) {
             i32 s1 = delta_vector_cb.y != 0 ? 
                 (y - point_c.y) * delta_vector_cb.x / delta_vector_cb.y + point_c.x : 
                 point_c.x;
@@ -563,7 +534,7 @@ SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, v
             }
 
             for(i32 x = s1; x < s2; x++) {
-                if (x > 0 && x < buf->size.x) {
+                if (x > 0 && x < SILK_PIXELBUFFER_WIDTH) {
                     silkDrawPixel(buf, (vec2i) { x, y }, pix);
                 }
             }
@@ -573,7 +544,7 @@ SILK_API i32 silkDrawTriangle(pixel_buffer* buf, vec2i point_a, vec2i point_b, v
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangleEquilateral(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix) {
+SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, pixel pix) {
     // Source:
     // https://www.quora.com/How-do-you-calculate-the-triangle-vertices-coordinates-on-a-circumcircle-triangle-with-a-given-centre-point-and-radius-Assuming-the-triangle-is-acute-with-all-equal-length-sides-and-that-one-point-is-straight-up
 
@@ -603,7 +574,7 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel_buffer* buf, vec2i midpoint, i32 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangleLines(pixel_buffer* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
+SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
         
@@ -621,7 +592,7 @@ SILK_API i32 silkDrawTriangleLines(pixel_buffer* buf, vec2i point_a, vec2i point
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangleEquilateralLines(pixel_buffer* buf, vec2i midpoint, i32 radius, pixel pix) {
+SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i midpoint, i32 radius, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
         

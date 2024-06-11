@@ -3,22 +3,24 @@
 
 #include <stdio.h>
 
+#define SILK_PIXELBUFFER_WIDTH 800
+#define SILK_PIXELBUFFER_HEIGHT 600
+
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
 int main(int argc, const string argv[]) {
     string file_path = "output.ppm";
-    pixel_buffer buffer = silkCreatePixelBuffer(
-        800,
-        600
-    );
+    pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
-    silkClearPixelBufferColor(&buffer, 0xffffffff);
+    silkLogInfo("Hello, world!");
+
+    silkClearPixelBufferColor(buffer, 0xffffffff);
 
     silkDrawCircle(
-        &buffer, 
-        (vec2i) { buffer.size.x / 2.0, buffer.size.y / 2.0f }, 
-        buffer.size.y / 4, 
+        buffer, 
+        (vec2i) { SILK_PIXELBUFFER_WIDTH / 2.0, SILK_PIXELBUFFER_HEIGHT / 2.0f }, 
+        SILK_PIXELBUFFER_HEIGHT / 4, 
         0xff0000ff
     );
     
@@ -36,8 +38,8 @@ int main(int argc, const string argv[]) {
         "P6\n"      // PPM Header
         "%i %i\n"   // PPM image's width and height
         "255\n",    // PPM max color information (maximum color value can be 225)
-        buffer.size.x, 
-        buffer.size.y
+        SILK_PIXELBUFFER_WIDTH, 
+        SILK_PIXELBUFFER_HEIGHT
     );
 
     if(ferror(file)) {
@@ -45,11 +47,11 @@ int main(int argc, const string argv[]) {
         return SILK_FAILURE;
     }
 
-    for(int i = 0; i < buffer.size.x * buffer.size.y; i++) {
+    for(int i = 0; i < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; i++) {
         u8 channels[3] = {
-            silkPixelToColor(buffer.buffer[i]).r,
-            silkPixelToColor(buffer.buffer[i]).g,
-            silkPixelToColor(buffer.buffer[i]).b
+            silkPixelToColor(buffer[i]).r,
+            silkPixelToColor(buffer[i]).g,
+            silkPixelToColor(buffer[i]).b
         };
         
         fwrite(
@@ -66,8 +68,6 @@ int main(int argc, const string argv[]) {
     }
 
     fclose(file);
-
-    silkPixelBufferFree(&buffer);
 
     return 0;
 }
