@@ -44,9 +44,9 @@ This is the list of available examples provided by Silk:
 - [PPM Example](./examples/example_ppm/)
 - [X11 Example](./examples/example_x11/)
 - [SDL Example](./examples/example_sdl/)
+- [Raylib Example](./examples/example_raylib/)
 
 Possible examples in the future:
-- raylib Example
 - stb_image example
 
 ## Credits
