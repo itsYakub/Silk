@@ -140,16 +140,19 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix);
 
 SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix);
 
-SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, pixel pix);
+SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, pixel pix);
+SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i offset, vec2i size, i32 angle, pixel pix);
 SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, pixel pix);
 
 SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix);
 
 SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
-SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, i32 angle, pixel pix);
 
 SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
 SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i midpoint, i32 radius, pixel pix);
+
+SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, pixel pix);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Logging
@@ -376,20 +379,21 @@ SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix) {
 
     f32 dx = end.x - start.x;
     f32 dy = end.y - start.y;
+    
     f32 steps = 0;
-    f32 i = 0;
+    i32 i = 0;
 
     f32 x = 0;
     f32 y = 0;
 
-    if (abs((i32)(dx)) >= abs((i32)(dy))) {
-        steps = abs((i32)(dx));
+    if (abs(dx) >= abs(dy)) {
+        steps = abs(dx);
     } else {
-        steps = abs((i32)(dy));
+        steps = abs(dy);
     }
 
-    dx = dx / steps;
-    dy = dy / steps;
+    dx /= steps;
+    dy /= steps;
     x = start.x;
     y = start.y;
 
@@ -403,18 +407,77 @@ SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, pixel pix) {
+SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
         
         return SILK_FAILURE;
     }
 
-    for(i32 y = 0; y < size.y; y++) {
-        for(i32 x = 0; x < size.x; x++) {
-            silkDrawPixel(buf, (vec2i) { position.x + x, position.y + y}, pix);
-        }
+    silkDrawRectPro(
+        buf, 
+        position, 
+        (vec2i) { 0 }, 
+        size, 
+        rotation, 
+        pix
+    );
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i offset, vec2i size, i32 angle, pixel pix) {
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
     }
+
+    vec2i points[4] = {
+        { 0 }, // top-left
+        { 0 }, // top_right
+        { 0 }, // bottom_left
+        { 0 }  // bottom_right
+    };
+
+    f32 angle_to_radians = angle * 3.14 / 180;
+
+    vec2i delta = { 
+        -offset.x,
+        -offset.y
+    };
+
+    points[0].x = midpoint.x + delta.x * cos(angle_to_radians) - delta.y * sin(angle_to_radians);
+    points[0].y = midpoint.y + delta.x * sin(angle_to_radians) + delta.y * cos(angle_to_radians);
+
+    points[1].x = midpoint.x + (delta.x + size.x) * cos(angle_to_radians) - delta.y * sin(angle_to_radians);
+    points[1].y = midpoint.y + (delta.x + size.x) * sin(angle_to_radians) + delta.y * cos(angle_to_radians);
+
+    points[2].x = midpoint.x + delta.x * cos(angle_to_radians) - (delta.y + size.y) * sin(angle_to_radians);
+    points[2].y = midpoint.y + delta.x * sin(angle_to_radians) + (delta.y + size.y) * cos(angle_to_radians);
+
+    points[3].x = midpoint.x + (delta.x + size.x) * cos(angle_to_radians) - (delta.y + size.y) * sin(angle_to_radians);
+    points[3].y = midpoint.y + (delta.x + size.x) * sin(angle_to_radians) + (delta.y + size.y) * cos(angle_to_radians);
+
+    // Indices:
+    // 0 - 1 - 2
+    // 1 - 2 - 3
+
+    silkDrawTriangle(
+        buf, 
+        points[0], 
+        points[1], 
+        points[2], 
+        pix
+    );
+
+    silkDrawTriangle(
+        buf, 
+        points[1], 
+        points[2], 
+        points[3], 
+        pix
+    );
 
     return SILK_SUCCESS;
 }
@@ -458,6 +521,16 @@ SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
                 silkDrawPixel(buf, (vec2i) { x, y }, pix);
             }
         }
+    }
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, pixel pix) {
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
     }
 
     return SILK_SUCCESS;
@@ -511,10 +584,8 @@ SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i po
                 silkIntSwap(&s1, &s2);
             }
 
-            for(i32 x = s1; x < s2; x++) {
-                if (x > 0 && x < SILK_PIXELBUFFER_WIDTH) {
-                    silkDrawPixel(buf, (vec2i) { x, y }, pix);
-                }
+            for(i32 x = s1; x <= s2; x++) {
+                silkDrawPixel(buf, (vec2i) { x, y }, pix);
             }
         }
     }
@@ -533,10 +604,8 @@ SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i po
                 silkIntSwap(&s1, &s2);
             }
 
-            for(i32 x = s1; x < s2; x++) {
-                if (x > 0 && x < SILK_PIXELBUFFER_WIDTH) {
-                    silkDrawPixel(buf, (vec2i) { x, y }, pix);
-                }
+            for(i32 x = s1; x <= s2; x++) {
+                silkDrawPixel(buf, (vec2i) { x, y }, pix);
             }
         }
     }
@@ -544,7 +613,7 @@ SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i po
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, pixel pix) {
+SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, i32 angle, pixel pix) {
     // Source:
     // https://www.quora.com/How-do-you-calculate-the-triangle-vertices-coordinates-on-a-circumcircle-triangle-with-a-given-centre-point-and-radius-Assuming-the-triangle-is-acute-with-all-equal-length-sides-and-that-one-point-is-straight-up
 

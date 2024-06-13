@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./res/images/silk_banner.png" width=100% height=100% style="border-radius:16px 64px">
+<img src="./res/images/silk_banner.png" width=100% height=100%>
 
 </div>
 

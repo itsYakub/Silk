@@ -6,7 +6,9 @@
 - [ ] **Optimization**;
 
 ## 2. Examples:
-- [ ] **Raylib example**;
+- [X] **Raylib example**;
+- [ ] **RGFW & RSGL example**;
+- [ ] **stb_image.h example**;
 
 ## 3. Repository:
-- [ ] **Finish [README.md](./README.md)**
+- [X] **Finish [README.md](./README.md)**
