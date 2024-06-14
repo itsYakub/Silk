@@ -2,7 +2,7 @@
 ## 1. Silk:
 - [ ] **Star shape rendering** (with `n` number of rays);
 - [ ] **Anti-Aliased shape rendering**;
-- [ ] **Shape rotation**;
+- [X] **Shape rotation**;
 - [ ] **Optimization**;
 
 ## 2. Examples:
