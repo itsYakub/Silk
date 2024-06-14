@@ -623,22 +623,30 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius,
         return SILK_FAILURE;
     }
 
-    vec2i point_a = {
-        midpoint.x,
-        midpoint.y - radius
+    vec2i points[3] = {
+        { midpoint.x, midpoint.y - radius },                                // point: 0 (top)
+        { midpoint.x - sqrt(3) * radius / 2, midpoint.y + radius / 2 },     // point: 1 (left)
+        { midpoint.x + sqrt(3) * radius / 2, midpoint.y + radius / 2 },     // point: 2 (bottom)
     };
 
-    vec2i point_b = {
-        midpoint.x - sqrt(3) * radius / 2,
-        midpoint.y + radius / 2
-    };
+    // Big thanks to @zet23t for help:
+    // https://twitter.com/zet23t
+    
+    f32 angle_to_radians = angle * 3.14f / 180.0f;
+    f32 x_right = cos(angle_to_radians);
+    f32 y_right = sin(angle_to_radians);
+    f32 x_up = -y_right;
+    f32 y_up = x_right;
+    
+    for(i32 i = 0; i < 3; i++) {
+        f32 dx = points[i].x - midpoint.x;
+        f32 dy = points[i].y - midpoint.y;
+        
+        points[i].x = midpoint.x + (x_right * dx + x_up * dy);
+        points[i].y = midpoint.y + (y_right * dx + y_up * dy);
+    }
 
-    vec2i point_c = {
-        midpoint.x + sqrt(3) * radius / 2,
-        midpoint.y + radius / 2
-    };
-
-    silkDrawTriangle(buf, point_a, point_b, point_c, pix);
+    silkDrawTriangle(buf, points[0], points[1], points[2], pix);
 
     return SILK_SUCCESS;
 }

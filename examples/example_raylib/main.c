@@ -81,6 +81,7 @@ i32 RaylibClose(Texture* texture) {
 int main(int argc, const string argv[]) {
     // Silk's pixel buffer
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT] = { 0 };
+    i32 rotation = 0;
 
     // Raylib components
     Texture raylib_texture = { 0 };
@@ -93,13 +94,12 @@ int main(int argc, const string argv[]) {
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColor(buffer, 0xffffffff);
 
-        // Drawing the rectangle in the middle of the screen
-        silkDrawRectPro(
+        // Draw the spinning triangle at the middle of the screen
+        silkDrawTriangleEquilateral(
             buffer, 
             (vec2i) { SILK_PIXELBUFFER_WIDTH / 2, SILK_PIXELBUFFER_HEIGHT / 2 }, 
-            (vec2i) { 64, 64 },
-            (vec2i) { 128, 128 },
-            45, 
+            SILK_PIXELBUFFER_HEIGHT / 4,
+            rotation++, 
             0xff0000ff
         );
 
