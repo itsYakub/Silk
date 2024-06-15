@@ -45,9 +45,10 @@ This is the list of available examples provided by Silk:
 - [X11 Example](./examples/example_x11/)
 - [SDL Example](./examples/example_sdl/)
 - [Raylib Example](./examples/example_raylib/)
+- [STB_Image Example](./examples/example_stbi/)
 
 Possible examples in the future:
-- stb_image example
+- RGFW & RSGL example
 
 ## Credits
 1. Inspiration:

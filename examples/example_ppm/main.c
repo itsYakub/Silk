@@ -9,27 +9,19 @@
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
-int main(int argc, const string argv[]) {
-    string file_path = "output.ppm";
-    pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
-
-    silkLogInfo("Hello, world!");
-
-    silkClearPixelBufferColor(buffer, 0xffffffff);
-
-    silkDrawCircle(
-        buffer, 
-        (vec2i) { SILK_PIXELBUFFER_WIDTH / 2.0, SILK_PIXELBUFFER_HEIGHT / 2.0f }, 
-        SILK_PIXELBUFFER_HEIGHT / 4, 
-        0xff0000ff
-    );
-    
+i32 PPMSave(pixel* buf, const string path) {
     // You can learn more about PPM format here:
     // https://netpbm.sourceforge.net/doc/ppm.html
 
-    FILE* file = fopen(file_path, "w");
+    if(!buf) {
+        silkLogErr("Passed the invalid pixel buffer.");
+        
+        return SILK_FAILURE;
+    }
+
+    FILE* file = fopen(path, "w");
     if(!file) {
-        silkLogErr("FILE: Couldn't open the file: %s", file_path);
+        silkLogErr("FILE: Couldn't open the file: %s", path);
         return SILK_FAILURE;
     }
 
@@ -49,9 +41,9 @@ int main(int argc, const string argv[]) {
 
     for(int i = 0; i < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; i++) {
         u8 channels[3] = {
-            silkPixelToColor(buffer[i]).r,
-            silkPixelToColor(buffer[i]).g,
-            silkPixelToColor(buffer[i]).b
+            silkPixelToColor(buf[i]).r,
+            silkPixelToColor(buf[i]).g,
+            silkPixelToColor(buf[i]).b
         };
         
         fwrite(
@@ -68,6 +60,23 @@ int main(int argc, const string argv[]) {
     }
 
     fclose(file);
+
+    return SILK_SUCCESS;
+}
+
+int main(int argc, const string argv[]) {
+    pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
+
+    silkClearPixelBufferColor(buffer, 0xffffffff);
+
+    silkDrawCircle(
+        buffer, 
+        (vec2i) { SILK_PIXELBUFFER_WIDTH / 2.0, SILK_PIXELBUFFER_HEIGHT / 2.0f }, 
+        SILK_PIXELBUFFER_HEIGHT / 4, 
+        0xff0000ff
+    );
+    
+    PPMSave(buffer, "output.ppm");
 
     return 0;
 }

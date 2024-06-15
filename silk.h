@@ -121,8 +121,8 @@ SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i region);
 SILK_API i32 silkClearPixelBufferColor(pixel* buf, pixel pix);
 SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i region, pixel pix);
 
-SILK_API pixel silkGetPixel(pixel* buf, vec2i position);
-SILK_API i32 silkSetPixel(pixel* buf, vec2i position, pixel pix);
+SILK_API pixel silkGetPixel(pixel* buf, vec2i position, vec2i size);
+SILK_API i32 silkSetPixel(pixel* buf, vec2i position, vec2i size, pixel pix);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Pixels and Colors
@@ -234,7 +234,7 @@ SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i region) {
 
     for(i32 y = 0; y < region.y; y++) {
         for(i32 x = 0; x < region.x; x++) {
-            silkSetPixel(buf, (vec2i) { x, y }, 0);
+            silkSetPixel(buf, (vec2i) { x, y }, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, 0);
         }
     }
 
@@ -264,31 +264,31 @@ SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i region, pixel pix
 
     for(i32 y = 0; y < region.y; y++) {
         for(i32 x = 0; x < region.x; x++) {
-            silkSetPixel(buf, (vec2i) { x, y }, pix);
+            silkSetPixel(buf, (vec2i) { x, y }, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, pix);
         }
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API pixel silkGetPixel(pixel* buf, vec2i position) {
+SILK_API pixel silkGetPixel(pixel* buf, vec2i position, vec2i size) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
         return 0xffffffff;
     }
 
-    return buf[position.y * SILK_PIXELBUFFER_WIDTH + position.x];
+    return buf[position.y * size.x + position.x];
 }
 
-SILK_API i32 silkSetPixel(pixel* buf, vec2i position, pixel pix) {
+SILK_API i32 silkSetPixel(pixel* buf, vec2i position, vec2i size, pixel pix) {
     if(!buf) {
         silkLogErr("Passed the invalid pixel buffer.");
 
         return SILK_FAILURE;
     }
 
-    buf[position.y * SILK_PIXELBUFFER_WIDTH + position.x] = pix;
+    buf[position.y * size.x + position.x] = pix;
 
     return SILK_SUCCESS;
 }
@@ -351,21 +351,26 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
 
     // If the pixel from this position is the same as the pixel we want to draw, we can return, 
     // as there won't be any change in this specific position.
-    if(silkGetPixel(buf, position) == pix) {
+    if(silkGetPixel(buf, position, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }) == pix) {
         return SILK_SUCCESS;
     }
 
 #if !defined(SILK_DISABLE_ALPHABLEND) || defined(SILK_ENABLE_ALPHABLEND)
 
     pix = silkAplhaBlend(
-        silkGetPixel(buf, position), 
+        silkGetPixel(buf, position, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT } ), 
         pix, 
         silkPixelToColor(pix).a
     );
 
 #endif
 
-    silkSetPixel(buf, position, pix);
+    silkSetPixel(
+        buf, 
+        position, 
+        (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, 
+        pix
+    );
 
     return SILK_SUCCESS;
 }
