@@ -1,12 +1,15 @@
 <div align="center">
 
-# Silk example - PPM
+# Silk example - Raylib
 
 </div>
 
 - Example submited by: [@itsYakub](https://github.com/itsYakub)
 - Compilation command:
 ```console
-$ cc main.c -o example.out
+$ mkdir bin/
+$ cd bin/
+$ cmake ..
+$ cmake --build .
 $ ./example.out
 ```

@@ -1,6 +1,6 @@
 <div align="center">
 
-# Silk example - PPM
+# Silk example - COnsole
 
 </div>
 

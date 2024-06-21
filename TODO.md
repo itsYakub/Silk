@@ -2,7 +2,6 @@
 ## 1. Silk:
 - [X] **Shape rotation**;
 - [ ] **Star shape rendering** (with `n` number of rays);
-- [ ] **Anti-Aliased shape rendering**;
 - [ ] **Optimization**;
 
 ## 2. Examples:
@@ -13,3 +12,4 @@
 ## 3. Repository:
 - [X] **Finish [README.md](./README.md)**;
 - [ ] **Expand the examples README's**;
+- [ ] **Separate the examples to functionalities and platforms (or maybe move the platform examples to their own directory called "implementations")**

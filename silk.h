@@ -83,14 +83,6 @@
     #define SILK_PIXELBUFFER_HEIGHT 1080 // SILK_PIXELBUFFER_HEIGHT: Default Full HD monitor height
 #endif // SILK_PIXELBUFFER_HEIGHT
 
-#if !defined(SILK_PIXELBUFFER_WIDTH)
-    #define SILK_PIXELBUFFER_WIDTH 1920 // SILK_PIXELBUFFER_WIDTH: Default Full HD monitor width
-#endif // SILK_PIXELBUFFER_WIDTH
-
-#if !defined(SILK_PIXELBUFFER_HEIGHT)
-    #define SILK_PIXELBUFFER_HEIGHT 1080 // SILK_PIXELBUFFER_HEIGHT: Default Full HD monitor height
-#endif // SILK_PIXELBUFFER_HEIGHT
-
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Typedefs
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -112,6 +104,10 @@ typedef u32                                             pixel;
 // SECTION: Function declarations
 // --------------------------------------------------------------------------------------------------------------------------------
 
+#ifdef __cplusplus
+extern "C" {            
+#endif
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Pixel buffer
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -124,13 +120,16 @@ SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i region, pixel pix
 SILK_API pixel silkGetPixel(pixel* buf, vec2i position, vec2i size);
 SILK_API i32 silkSetPixel(pixel* buf, vec2i position, vec2i size, pixel pix);
 
+SILK_API i32 silkUnloadBuffer(pixel* buf);
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Pixels and Colors
 // --------------------------------------------------------------------------------------------------------------------------------
 
 SILK_API color silkPixelToColor(pixel pix);
 SILK_API pixel silkColorToPixel(color col);
-SILK_API pixel silkAplhaBlend(pixel base_pixel, pixel return_pixel, color_channel value);
+SILK_API pixel silkAlphaBlend(pixel base_pixel, pixel return_pixel, color_channel value);
+SILK_API pixel silkPixelFade(pixel pix, f32 factor);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Rendering
@@ -141,7 +140,7 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix);
 SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix);
 
 SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, pixel pix);
-SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i offset, vec2i size, i32 angle, pixel pix);
+SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i size, vec2i offset, i32 angle, pixel pix);
 SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, pixel pix);
 
 SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix);
@@ -152,7 +151,9 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius,
 SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
 SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i midpoint, i32 radius, pixel pix);
 
-SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, pixel pix);
+SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, i32 rotation, pixel pix);
+
+SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Logging
@@ -170,6 +171,23 @@ SILK_API i32 silkVectorSwap(vec2i* a, vec2i* b);
 SILK_API i32 silkIntSwap(i32* a, i32* b);
 
 // --------------------------------------------------------------------------------------------------------------------------------
+// SUB-SECTION: IO
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API pixel* silkLoadPPM(const string path, vec2i* size);
+SILK_API i32 silkSavePPM(pixel* buf, const string path);
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SUB-SECTION: IO
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API string silkGetError();
+
+#ifdef __cplusplus
+}    
+#endif
+
+// --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Implementation
 // --------------------------------------------------------------------------------------------------------------------------------
 
@@ -180,28 +198,46 @@ SILK_API i32 silkIntSwap(i32* a, i32* b);
 // --------------------------------------------------------------------------------------------------------------------------------
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
 // --------------------------------------------------------------------------------------------------------------------------------
-// SECTION: Includes
-// --------------------------------------------------------------------------------------------------------------------------------
-
-#include "silk.h"
-
-#include <stdarg.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-
-// --------------------------------------------------------------------------------------------------------------------------------
-// SECTION: Pixels and Colors
+// SECTION: Macro Definitions
 // --------------------------------------------------------------------------------------------------------------------------------
 
 #define SILK_TEXT_BUFFER_SIZE 256
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SUB-SECTION: Error Messages
+// --------------------------------------------------------------------------------------------------------------------------------
+
+#define SILK_ERR_MSG_EMPTY "Error message NULL or Empty."
+#define SILK_ERR_BUF_INVALID "Passed the invalid pixel buffer."
+#define SILK_ERR_BUF_IMG_INVALID "Passed the invalid image buffer."
+#define SILK_ERR_BUF_ACCES_OUT_OF_BOUNDS "Trying to access the out-of-bounds buffer address."
+#define SILK_ERR_FILE_OPEN_FAIL "Couldn't open the file."
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SECTION: Internals
+// --------------------------------------------------------------------------------------------------------------------------------
+
+static char silk_error_msg[SILK_TEXT_BUFFER_SIZE] = SILK_ERR_MSG_EMPTY;
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SECTION: Internal functions
+// --------------------------------------------------------------------------------------------------------------------------------
+
+i32 silkAssignErrorMessage(const string msg) {
+    strcpy(
+        silk_error_msg,
+        msg
+    );
+
+    return SILK_SUCCESS;
+}
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Function definitions
@@ -212,8 +248,8 @@ SILK_API i32 silkIntSwap(i32* a, i32* b);
 // --------------------------------------------------------------------------------------------------------------------------------
 
 SILK_API i32 silkClearPixelBuffer(pixel* buf) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
@@ -226,8 +262,8 @@ SILK_API i32 silkClearPixelBuffer(pixel* buf) {
 }
 
 SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i region) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
@@ -242,8 +278,8 @@ SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i region) {
 }
 
 SILK_API i32 silkClearPixelBufferColor(pixel* buf, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
@@ -256,8 +292,8 @@ SILK_API i32 silkClearPixelBufferColor(pixel* buf, pixel pix) {
 }
 
 SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i region, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
@@ -272,8 +308,8 @@ SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i region, pixel pix
 }
 
 SILK_API pixel silkGetPixel(pixel* buf, vec2i position, vec2i size) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return 0xffffffff;
     }
@@ -282,13 +318,25 @@ SILK_API pixel silkGetPixel(pixel* buf, vec2i position, vec2i size) {
 }
 
 SILK_API i32 silkSetPixel(pixel* buf, vec2i position, vec2i size, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
     buf[position.y * size.x + position.x] = pix;
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkUnloadBuffer(pixel* buf) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+
+        return SILK_FAILURE;
+    }
+
+    free(buf);
 
     return SILK_SUCCESS;
 }
@@ -320,7 +368,7 @@ SILK_API pixel silkColorToPixel(color col) {
     return result;
 }
 
-SILK_API pixel silkAplhaBlend(pixel base_pixel, pixel return_pixel, color_channel value) {
+SILK_API pixel silkAlphaBlend(pixel base_pixel, pixel return_pixel, color_channel value) {
     color result = { 0 };
     color base_color = silkPixelToColor(base_pixel);
     color return_color = silkPixelToColor(return_pixel);
@@ -333,19 +381,32 @@ SILK_API pixel silkAplhaBlend(pixel base_pixel, pixel return_pixel, color_channe
     return silkColorToPixel(result);
 }
 
+SILK_API pixel silkPixelFade(pixel pix, f32 factor) {
+    color result = { 
+        .r = silkPixelToColor(pix).r,
+        .g = silkPixelToColor(pix).g,
+        .b = silkPixelToColor(pix).b,
+        .a = factor * 255
+    };
+
+    return silkColorToPixel(result);
+}
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Rendering
 // --------------------------------------------------------------------------------------------------------------------------------
 
 SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
     if( (position.x < 0 || position.x >= SILK_PIXELBUFFER_WIDTH) ||
         (position.y < 0 || position.y >= SILK_PIXELBUFFER_HEIGHT)) {
+        silkAssignErrorMessage(SILK_ERR_BUF_ACCES_OUT_OF_BOUNDS);
+
         return SILK_FAILURE;
     }
 
@@ -357,7 +418,7 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
 
 #if !defined(SILK_DISABLE_ALPHABLEND) || defined(SILK_ENABLE_ALPHABLEND)
 
-    pix = silkAplhaBlend(
+    pix = silkAlphaBlend(
         silkGetPixel(buf, position, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT } ), 
         pix, 
         silkPixelToColor(pix).a
@@ -376,45 +437,39 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
 }
 
 SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
+    if(start.x < end.x) {
+        silkVectorSwap(&start, &end);
+    }
+
+    f32 x = start.x;
+    f32 y = start.y;
+    
     f32 dx = end.x - start.x;
     f32 dy = end.y - start.y;
-    
-    f32 steps = 0;
-    i32 i = 0;
 
-    f32 x = 0;
-    f32 y = 0;
-
-    if (abs(dx) >= abs(dy)) {
-        steps = abs(dx);
-    } else {
-        steps = abs(dy);
-    }
+    f32 steps = abs(dx) >= abs(dy) ? abs(dx) : abs(dy);
 
     dx /= steps;
     dy /= steps;
-    x = start.x;
-    y = start.y;
 
-    while (i <= steps) {
-        silkDrawPixel(buf, (vec2i) { x, y } , pix);
+    for(int i = 0; i <= steps; i++) {
+        silkDrawPixel(buf, (vec2i) { round(x), round(y) } , pix);
         x += dx;
         y += dy;
-        i++;
     }
 
     return SILK_SUCCESS;
 }
 
 SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -422,8 +477,8 @@ SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, 
     silkDrawRectPro(
         buf, 
         position, 
-        (vec2i) { 0 }, 
         size, 
+        (vec2i) { 0 }, 
         rotation, 
         pix
     );
@@ -431,9 +486,9 @@ SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i offset, vec2i size, i32 angle, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i size, vec2i offset, i32 angle, pixel pix) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -488,8 +543,8 @@ SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i offset, vec2i siz
 }
 
 SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -503,8 +558,8 @@ SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, pixel pix
 }
 
 SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -531,22 +586,12 @@ SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
-        
-        return SILK_FAILURE;
-    }
-
-    return SILK_SUCCESS;
-}
-
 SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
     // Source:
     // https://github.com/tsoding/olive.c/commit/633c657dbea3435a64114570ecb3f703fa276f28
 
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -622,8 +667,8 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius,
     // Source:
     // https://www.quora.com/How-do-you-calculate-the-triangle-vertices-coordinates-on-a-circumcircle-triangle-with-a-given-centre-point-and-radius-Assuming-the-triangle-is-acute-with-all-equal-length-sides-and-that-one-point-is-straight-up
 
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -657,8 +702,8 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius,
 }
 
 SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -675,8 +720,8 @@ SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec
 }
 
 SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i midpoint, i32 radius, pixel pix) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
@@ -697,6 +742,78 @@ SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i midpoint, i32 ra
     };
 
     silkDrawTriangleLines(buf, point_a, point_b, point_c, pix);
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, i32 rotation, pixel pix) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    if(n < 3) {
+        n = 3;
+    }
+
+    i32 theta = 360 / n;
+    vec2i points[n];
+
+    // Calculating the positions of each point of our polygon
+    for(i32 i = 0; i < n; i++) {
+        // Equation: https://www.wyzant.com/resources/answers/601887/calculate-point-given-x-y-angle-and-distance
+        points[i] = (vec2i) {
+            .x = midpoint.x + radius * cos(((theta * i) + rotation) * 3.14 / 180),
+            .y = midpoint.y + radius * sin(((theta * i) + rotation) * 3.14 / 180)
+        };
+    }
+
+    // Drawing triangles based on the points
+    for(i32 i = 0; i < n; i++) {
+        silkDrawTriangle(
+            buf, 
+            midpoint,                               // First point is always midpoint
+            points[i],                              // second point is based on the current 'i'
+            i < n - 1 ? points[i + 1] : points[0],  // third point is based on the next index from 'i' OR the very first point of the array if we reach it's end
+            pix
+        );
+    }
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    if(!img_buf) {
+        silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    for(i32 y = 0; y < size_dest.y; y++) {
+        for(i32 x = 0; x < size_dest.x; x++) {
+            vec2i new_position = {
+                x * size_src.x / size_dest.x,
+                y * size_src.y / size_dest.y
+            };
+
+            silkDrawPixel(
+                buf, 
+                (vec2i) { position.x + x, position.y + y },
+                silkGetPixel(
+                    img_buf, 
+                    new_position, 
+                    size_src
+                )
+            );
+        }
+    }
 
     return SILK_SUCCESS;
 }
@@ -803,6 +920,102 @@ SILK_API i32 silkIntSwap(i32* a, i32* b) {
 
     return SILK_SUCCESS;
 }
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SUB-SECTION: IO
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API pixel* silkLoadPPM(const string path, vec2i* size) {
+    // You can learn more about PPM format here:
+    // https://netpbm.sourceforge.net/doc/ppm.html
+
+    FILE* file = fopen(path, "r");
+    if(!file) {
+        silkAssignErrorMessage(SILK_ERR_FILE_OPEN_FAIL);
+        return NULL;
+    }
+
+    pixel* result = (pixel*)calloc(size->x * size->y, sizeof(pixel));
+
+    // TODO(yakub):
+    // Implement the way of reading the PPM file
+    // The things we need to focus on are:
+    // - (Mandatory) Image's width and height;
+    // - (Mandatory) Image's color information;
+    // - (Optional, nice to have) We need to get the information about the maximum color channel value, then get it to our 255 maximum value;
+
+    fclose(file);
+
+    silkLogInfo("Image path: %s", path);
+    silkLogInfo("Image resolution: x.%i, y.%i", size->x, size->y);
+    silkLogInfo("Image memory size: %i", size->x * size->y * sizeof(pixel));
+
+    return result;
+}
+
+SILK_API i32 silkSavePPM(pixel* image_buf, const string path) {
+    // You can learn more about PPM format here:
+    // https://netpbm.sourceforge.net/doc/ppm.html
+
+    if(!image_buf) {
+        silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    FILE* file = fopen(path, "w");
+    if(!file) {
+        silkAssignErrorMessage(SILK_ERR_FILE_OPEN_FAIL);
+        return SILK_FAILURE;
+    }
+
+    fprintf(
+        file, 
+        "P6\n"      // PPM Magic Number
+        "%i %i\n"   // PPM image's width and height
+        "255\n",    // PPM max color information (maximum color value can be 225)
+        SILK_PIXELBUFFER_WIDTH, 
+        SILK_PIXELBUFFER_HEIGHT
+    );
+
+    if(ferror(file)) {
+        fclose(file);
+        return SILK_FAILURE;
+    }
+
+    for(int i = 0; i < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; i++) {
+        u8 channels[3] = {
+            silkPixelToColor(image_buf[i]).r,
+            silkPixelToColor(image_buf[i]).g,
+            silkPixelToColor(image_buf[i]).b
+        };
+        
+        fwrite(
+            channels, 
+            sizeof(channels), 
+            1, 
+            file  
+        );
+
+        if(ferror(file)) {
+            fclose(file);
+            return SILK_FAILURE;
+        }
+    }
+
+    fclose(file);
+
+    return SILK_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SUB-SECTION: IO
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API string silkGetError() {
+    return silk_error_msg;
+}
+
 
 #endif // SILK_IMPLEMENTATION
 
