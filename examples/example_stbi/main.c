@@ -47,12 +47,14 @@ i32 StbiRenderImage(pixel* buf, pixel* image, vec2i position, vec2i size, i32 sc
         return SILK_FAILURE;
     }
 
-    silkDrawBuffer(
-        buf,
-        image, 
-        (vec2i) { 0 }, 
-        size, 
-        (vec2i) { size.x * scale, size.y * scale }
+    silkDrawBufferPro(
+        buf,                                            // Main pixel buffer
+        image,                                          // Image buffer
+        position,                                       // Image position
+        (vec2i) { size.x / 2, size.y / 2 },             // Image position offset        
+        size,                                           // Image size (source)
+        (vec2i) { size.x * scale, size.y * scale },     // Image size (destination)
+        0xffffffff                                      // Image tint
     );
 
     return SILK_SUCCESS;
@@ -60,8 +62,6 @@ i32 StbiRenderImage(pixel* buf, pixel* image, vec2i position, vec2i size, i32 sc
 
 int main(int argc, const string argv[]) {
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT] = { 0 };
-
-    silkLogErr(silkGetError());
 
     vec2i size = { 0 };
     pixel* image = StbiLoadImage("turtle.png", &size);
@@ -71,7 +71,7 @@ int main(int argc, const string argv[]) {
     StbiRenderImage(
         buffer, 
         image, 
-        (vec2i) { SILK_PIXELBUFFER_WIDTH / 2 - size.x / 2, SILK_PIXELBUFFER_HEIGHT / 2 - size.y / 2 }, 
+        (vec2i) { SILK_PIXELBUFFER_WIDTH / 2, SILK_PIXELBUFFER_HEIGHT / 2 }, 
         size,
         1
     );

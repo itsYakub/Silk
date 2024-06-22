@@ -55,7 +55,7 @@
 // OR OTHER DEALINGS IN THE SOFTWARE. 
 // --------------------------------------------------------------------------------------------------------------------------------
 
-#ifndef SILK_H
+#if !defined(SILK_H)
 #define SILK_H
 
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -83,6 +83,9 @@
     #define SILK_PIXELBUFFER_HEIGHT 1080 // SILK_PIXELBUFFER_HEIGHT: Default Full HD monitor height
 #endif // SILK_PIXELBUFFER_HEIGHT
 
+#define SILK_PIXELBUFFER_CENTER_X (SILK_PIXELBUFFER_WIDTH / 2)
+#define SILK_PIXELBUFFER_CENTER_Y (SILK_PIXELBUFFER_HEIGHT / 2)
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Typedefs
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -104,7 +107,7 @@ typedef u32                                             pixel;
 // SECTION: Function declarations
 // --------------------------------------------------------------------------------------------------------------------------------
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {            
 #endif
 
@@ -130,6 +133,7 @@ SILK_API color silkPixelToColor(pixel pix);
 SILK_API pixel silkColorToPixel(color col);
 SILK_API pixel silkAlphaBlend(pixel base_pixel, pixel return_pixel, color_channel value);
 SILK_API pixel silkPixelFade(pixel pix, f32 factor);
+SILK_API pixel silkPixelTint(pixel pix, pixel tint);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Rendering
@@ -140,20 +144,23 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix);
 SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix);
 
 SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, pixel pix);
-SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i size, vec2i offset, i32 angle, pixel pix);
+SILK_API i32 silkDrawRectPro(pixel* buf, vec2i position, vec2i offset, vec2i size, i32 angle, pixel pix);
 SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, pixel pix);
 
 SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix);
+SILK_API i32 silkDrawCircleLines(pixel* buf, vec2i position, i32 radius, pixel pix);
 
 SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
-SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, i32 angle, pixel pix);
-
 SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, i32 angle, pixel pix);
 SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i midpoint, i32 radius, pixel pix);
 
 SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, i32 rotation, pixel pix);
+SILK_API i32 silkDrawStar(pixel* buf, vec2i midpoint, i32 radius, i32 n, i32 rotation, pixel pix);
 
-SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest);
+SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size);
+SILK_API i32 silkDrawBufferScaled(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest);
+SILK_API i32 silkDrawBufferPro(pixel* buf, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Logging
@@ -178,12 +185,12 @@ SILK_API pixel* silkLoadPPM(const string path, vec2i* size);
 SILK_API i32 silkSavePPM(pixel* buf, const string path);
 
 // --------------------------------------------------------------------------------------------------------------------------------
-// SUB-SECTION: IO
+// SUB-SECTION: Error-Logging
 // --------------------------------------------------------------------------------------------------------------------------------
 
 SILK_API string silkGetError();
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }    
 #endif
 
@@ -392,6 +399,17 @@ SILK_API pixel silkPixelFade(pixel pix, f32 factor) {
     return silkColorToPixel(result);
 }
 
+SILK_API pixel silkPixelTint(pixel pix, pixel tint) {
+    color result = { 
+        .r = ((i32)silkPixelToColor(pix).r * (i32)silkPixelToColor(tint).r) / 255,
+        .g = ((i32)silkPixelToColor(pix).g * (i32)silkPixelToColor(tint).g) / 255,
+        .b = ((i32)silkPixelToColor(pix).b * (i32)silkPixelToColor(tint).b) / 255,
+        .a = ((i32)silkPixelToColor(pix).a * (i32)silkPixelToColor(tint).a) / 255
+    };
+
+    return silkColorToPixel(result);
+}
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // SUB-SECTION: Rendering
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -486,7 +504,7 @@ SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, i32 rotation, 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i size, vec2i offset, i32 angle, pixel pix) {
+SILK_API i32 silkDrawRectPro(pixel* buf, vec2i position, vec2i offset, vec2i size, i32 angle, pixel pix) {
     if(buf == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
@@ -507,17 +525,17 @@ SILK_API i32 silkDrawRectPro(pixel* buf, vec2i midpoint, vec2i size, vec2i offse
         -offset.y
     };
 
-    points[0].x = midpoint.x + delta.x * cos(angle_to_radians) - delta.y * sin(angle_to_radians);
-    points[0].y = midpoint.y + delta.x * sin(angle_to_radians) + delta.y * cos(angle_to_radians);
+    points[0].x = position.x + delta.x * cos(angle_to_radians) - delta.y * sin(angle_to_radians);
+    points[0].y = position.y + delta.x * sin(angle_to_radians) + delta.y * cos(angle_to_radians);
 
-    points[1].x = midpoint.x + (delta.x + size.x) * cos(angle_to_radians) - delta.y * sin(angle_to_radians);
-    points[1].y = midpoint.y + (delta.x + size.x) * sin(angle_to_radians) + delta.y * cos(angle_to_radians);
+    points[1].x = position.x + (delta.x + size.x) * cos(angle_to_radians) - delta.y * sin(angle_to_radians);
+    points[1].y = position.y + (delta.x + size.x) * sin(angle_to_radians) + delta.y * cos(angle_to_radians);
 
-    points[2].x = midpoint.x + delta.x * cos(angle_to_radians) - (delta.y + size.y) * sin(angle_to_radians);
-    points[2].y = midpoint.y + delta.x * sin(angle_to_radians) + (delta.y + size.y) * cos(angle_to_radians);
+    points[2].x = position.x + delta.x * cos(angle_to_radians) - (delta.y + size.y) * sin(angle_to_radians);
+    points[2].y = position.y + delta.x * sin(angle_to_radians) + (delta.y + size.y) * cos(angle_to_radians);
 
-    points[3].x = midpoint.x + (delta.x + size.x) * cos(angle_to_radians) - (delta.y + size.y) * sin(angle_to_radians);
-    points[3].y = midpoint.y + (delta.x + size.x) * sin(angle_to_radians) + (delta.y + size.y) * cos(angle_to_radians);
+    points[3].x = position.x + (delta.x + size.x) * cos(angle_to_radians) - (delta.y + size.y) * sin(angle_to_radians);
+    points[3].y = position.y + (delta.x + size.x) * sin(angle_to_radians) + (delta.y + size.y) * cos(angle_to_radians);
 
     // Indices:
     // 0 - 1 - 2
@@ -581,6 +599,52 @@ SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
                 silkDrawPixel(buf, (vec2i) { x, y }, pix);
             }
         }
+    }
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawCircleLines(pixel* buf, vec2i position, i32 radius, pixel pix) {
+    // Source:
+    // https://www.geeksforgeeks.org/bresenhams-circle-drawing-algorithm/
+
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    i32 x = 0;
+    i32 y = radius;
+    i32 d = 3 - 2 * radius;
+
+    silkDrawPixel(buf, (vec2i) { position.x + x, position.y + y }, pix);
+    silkDrawPixel(buf, (vec2i) { position.x - x, position.y + y }, pix);
+    silkDrawPixel(buf, (vec2i) { position.x + x, position.y - y }, pix);
+    silkDrawPixel(buf, (vec2i) { position.x - x, position.y - y }, pix);
+    silkDrawPixel(buf, (vec2i) { position.x + y, position.y + x }, pix);
+    silkDrawPixel(buf, (vec2i) { position.x - y, position.y + x }, pix);
+    silkDrawPixel(buf, (vec2i) { position.x + y, position.y - x }, pix);
+    silkDrawPixel(buf, (vec2i) { position.x - y, position.y - x }, pix);
+
+    while(y >= x) {
+        x++;
+
+        if(d > 0) {
+            y--;
+            d += 4 * (x - y) + 10;
+        } else {
+            d += 4 * x + 6;
+        }
+
+        silkDrawPixel(buf, (vec2i) { position.x + x, position.y + y }, pix);
+        silkDrawPixel(buf, (vec2i) { position.x - x, position.y + y }, pix);
+        silkDrawPixel(buf, (vec2i) { position.x + x, position.y - y }, pix);
+        silkDrawPixel(buf, (vec2i) { position.x - x, position.y - y }, pix);
+        silkDrawPixel(buf, (vec2i) { position.x + y, position.y + x }, pix);
+        silkDrawPixel(buf, (vec2i) { position.x - y, position.y + x }, pix);
+        silkDrawPixel(buf, (vec2i) { position.x + y, position.y - x }, pix);
+        silkDrawPixel(buf, (vec2i) { position.x - y, position.y - x }, pix);
     }
 
     return SILK_SUCCESS;
@@ -663,6 +727,24 @@ SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i po
     return SILK_SUCCESS;
 }
 
+SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    if(point_a.y > point_b.y) silkVectorSwap(&point_a, &point_b);
+    if(point_a.y > point_c.y) silkVectorSwap(&point_a, &point_c);
+    if(point_b.y > point_c.y) silkVectorSwap(&point_b, &point_c);
+
+    silkDrawLine(buf, point_a, point_b, pix);
+    silkDrawLine(buf, point_b, point_c, pix);
+    silkDrawLine(buf, point_a, point_c, pix);
+
+    return SILK_SUCCESS;
+}
+
 SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius, i32 angle, pixel pix) {
     // Source:
     // https://www.quora.com/How-do-you-calculate-the-triangle-vertices-coordinates-on-a-circumcircle-triangle-with-a-given-centre-point-and-radius-Assuming-the-triangle-is-acute-with-all-equal-length-sides-and-that-one-point-is-straight-up
@@ -697,24 +779,6 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i midpoint, i32 radius,
     }
 
     silkDrawTriangle(buf, points[0], points[1], points[2], pix);
-
-    return SILK_SUCCESS;
-}
-
-SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
-    if(buf == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-        
-        return SILK_FAILURE;
-    }
-
-    if(point_a.y > point_b.y) silkVectorSwap(&point_a, &point_b);
-    if(point_a.y > point_c.y) silkVectorSwap(&point_a, &point_c);
-    if(point_b.y > point_c.y) silkVectorSwap(&point_b, &point_c);
-
-    silkDrawLine(buf, point_a, point_b, pix);
-    silkDrawLine(buf, point_b, point_c, pix);
-    silkDrawLine(buf, point_a, point_c, pix);
 
     return SILK_SUCCESS;
 }
@@ -783,7 +847,103 @@ SILK_API i32 silkDrawPolygon(pixel* buf, vec2i midpoint, i32 radius, i32 n, i32 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest) {
+SILK_API i32 silkDrawStar(pixel* buf, vec2i midpoint, i32 radius, i32 n, i32 rotation, pixel pix) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    if(n < 3) {
+        n = 3;
+    }
+
+    i32 theta = 360 / n;
+
+    // Calculating the positions of each point of our star and rendering it to the screen
+    for(i32 i = 0; i < n; i++) {
+        // Equation: https://www.wyzant.com/resources/answers/601887/calculate-point-given-x-y-angle-and-distance
+        vec2i point_a = {
+            .x = midpoint.x + radius * cos(((theta * i) + rotation) * 3.14 / 180),
+            .y = midpoint.y + radius * sin(((theta * i) + rotation) * 3.14 / 180)
+        };        
+        
+        vec2i point_b = {
+            .x = midpoint.x + (radius / n * 2) * cos(((theta * i) - 90 + rotation) * 3.14 / 180),
+            .y = midpoint.y + (radius / n * 2) * sin(((theta * i) - 90 + rotation) * 3.14 / 180)
+        };        
+        
+        vec2i point_c = {
+            .x = midpoint.x + (radius / n * 2) * cos(((theta * i) + 90 + rotation) * 3.14 / 180),
+            .y = midpoint.y + (radius / n * 2) * sin(((theta * i) + 90 + rotation) * 3.14 / 180)
+        };
+
+        silkDrawTriangle(
+            buf, 
+            point_a, 
+            point_b, 
+            point_c, 
+            pix
+        );
+    }
+
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    if(!img_buf) {
+        silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    silkDrawBufferPro(
+        buf, 
+        img_buf, 
+        position, 
+        (vec2i) { 0 },
+        size, 
+        size, 
+        0xffffffff
+    );
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawBufferScaled(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    if(!img_buf) {
+        silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    silkDrawBufferPro(
+        buf, 
+        img_buf, 
+        position,
+        (vec2i) { 0 }, 
+        size_src, 
+        size_dest, 
+        0xffffffff
+    );
+
+    return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawBufferPro(pixel* buf, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint) {
     if(buf == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
@@ -805,11 +965,14 @@ SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i si
 
             silkDrawPixel(
                 buf, 
-                (vec2i) { position.x + x, position.y + y },
-                silkGetPixel(
-                    img_buf, 
-                    new_position, 
-                    size_src
+                (vec2i) { (position.x - offset.x) + x, (position.y - offset.y) + y },
+                silkPixelTint(
+                    silkGetPixel(
+                        img_buf, 
+                        new_position, 
+                        size_src
+                    ),
+                    tint
                 )
             );
         }

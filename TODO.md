@@ -1,7 +1,7 @@
 # Silk TODO List:
 ## 1. Silk:
 - [X] **Shape rotation**;
-- [ ] **Star shape rendering** (with `n` number of rays);
+- [X] **Star shape rendering** (with `n` number of rays);
 - [ ] **Optimization**;
 
 ## 2. Examples:

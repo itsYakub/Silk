@@ -94,12 +94,12 @@ int main(int argc, const string argv[]) {
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColor(buffer, 0xffffffff);
 
-        // Draw the spinning polygon at the middle of the screen
-        silkDrawPolygon(
+        // Draw the spinning star at the middle of the screen
+        silkDrawStar(
             buffer, 
             (vec2i) { 
-                SILK_PIXELBUFFER_WIDTH / 2, 
-                SILK_PIXELBUFFER_HEIGHT / 2 
+                SILK_PIXELBUFFER_CENTER_X, 
+                SILK_PIXELBUFFER_CENTER_Y
             }, 
             SILK_PIXELBUFFER_HEIGHT / 4, 
             5, 
