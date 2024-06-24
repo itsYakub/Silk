@@ -15,4 +15,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(SDL2)
 
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/main.c)
-target_link_libraries(${PROJECT_NAME} SDL2)
+target_link_libraries(${PROJECT_NAME} SDL2 -lm)

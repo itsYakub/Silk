@@ -7,11 +7,14 @@
 ## Introduction
 
 This is Silk - 2D single-header graphics library, which works entirely on CPU.
-The soul-purpose of this library is to give you the buffer for pixels which then you can display with your windowing library of choosing.
+The soul-purpose of this library is to give you the front-end for rendering graphics immediately to the screen. Everything works on CPU, completely on stack. 
+Note that you MUST provide your own rendering and/or windowing back-end to work with Silk.
 
 Check out [`examples`](./examples/) to see how you can do this with some of the most popular libraries!
 
 You can also check out [`TODO.md`](./TODO.md) file to see the possible additions in the future!
+
+Lastly, check out the [`docs`](./docs/) for documentation.
 
 ## Setup
 ### 1. Getting started

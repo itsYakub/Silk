@@ -36,6 +36,16 @@ i32 RaylibSetup(Texture* texture) {
     *texture = LoadTextureFromImage(raylib_image);
     UnloadImage(raylib_image);
 
+#if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
+
+    SetTextureFilter(*texture, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+
+#elif defined (SILK_BYTEORDER_BIG_ENDIAN)
+
+    SetTextureFilter(*texture, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+
+#endif
+
     if(!IsTextureReady(*texture)) {
         silkLogErr("Raylib: Couldn't create a Texture");
 
@@ -89,22 +99,35 @@ int main(int argc, const string argv[]) {
     // Setting-up Raylib components
     RaylibSetup(&raylib_texture);
 
+    silkLogByteOrderStatus();
+    silkLogAlphaBlendStatus();
+
     // Update-Render loop
     while(!WindowShouldClose()) {
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColor(buffer, 0xffffffff);
 
         // Draw the spinning star at the middle of the screen
-        silkDrawStar(
+        silkDrawRectLines(
             buffer, 
             (vec2i) { 
                 SILK_PIXELBUFFER_CENTER_X, 
                 SILK_PIXELBUFFER_CENTER_Y
             }, 
-            SILK_PIXELBUFFER_HEIGHT / 4, 
-            5, 
+            (vec2i) {
+                SILK_PIXELBUFFER_HEIGHT / 4,
+                SILK_PIXELBUFFER_HEIGHT / 4
+            }, 
             rotation++,
+            (vec2i) { 0 },
             0xff0000ff
+        );
+
+        silkDrawRect(
+            buffer, 
+            (vec2i) { GetMouseX(), GetMouseY() }, 
+            (vec2i) { 64, 64 },
+            0x8800ff00
         );
 
         // Displaying the graphics on the window

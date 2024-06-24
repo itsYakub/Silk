@@ -59,6 +59,8 @@ if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 
     silkLogInfo("SDL: Renderer created successfully.");
 
+#if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
+
     *texture = SDL_CreateTexture(
         *renderer, 
         SDL_PIXELFORMAT_ABGR8888, 
@@ -66,6 +68,18 @@ if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         800, 
         600
     );
+
+#elif defined (SILK_BYTEORDER_BIG_ENDIAN)
+
+    *texture = SDL_CreateTexture(
+        *renderer, 
+        SDL_PIXELFORMAT_RGBA8888, 
+        SDL_TEXTUREACCESS_STREAMING, 
+        800, 
+        600
+    );
+
+#endif
 
     if(texture == NULL) {
         silkLogErr("SDL: Couldn't create an SDL Texture.");
@@ -170,6 +184,8 @@ int main(int argc, const string argv[]) {
         &sdl_texture
     );
 
+    silkLogAlphaBlendStatus();
+
     // Update-Render loop
     bool exit = false;
     while(!exit) { 
@@ -186,14 +202,16 @@ int main(int argc, const string argv[]) {
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColor(buffer, 0xffffffff);
         
-        // Drawing the equaliteral triangle in the middle of the screen
-        silkDrawTriangleEquilateral(
+        // Draw the rectangle at the middle of the screen
+        silkDrawRectPro(
             buffer, 
-            (vec2i) { SILK_PIXELBUFFER_WIDTH / 2, SILK_PIXELBUFFER_HEIGHT / 2 },
-            SILK_PIXELBUFFER_HEIGHT / 8,
+            (vec2i) { SILK_PIXELBUFFER_CENTER_X, SILK_PIXELBUFFER_CENTER_Y}, 
+            (vec2i) { 128, 128 }, 
+            (vec2i) { 64, 64 },
+            45,
             0xff0000ff
         );
-        
+
         // Displaying the graphics on the window
         SDLBlit(
             buffer, 

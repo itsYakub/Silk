@@ -15,4 +15,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/main.c)
-target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${PROJECT_NAME} raylib -lm)
