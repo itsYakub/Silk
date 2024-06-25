@@ -7,7 +7,7 @@
 ## 2. Examples:
 - [X] **Raylib example**;
 - [X] **stb_image.h example**;
-- [ ] **RGFW & RSGL example**;
+- [X] **RGFW & RSGL example**;
 
 ## 3. Repository:
 - [X] **Finish [README.md](./README.md)**;
