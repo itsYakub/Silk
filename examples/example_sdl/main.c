@@ -207,8 +207,8 @@ int main(int argc, const string argv[]) {
             buffer, 
             (vec2i) { SILK_PIXELBUFFER_CENTER_X, SILK_PIXELBUFFER_CENTER_Y}, 
             (vec2i) { 128, 128 }, 
-            (vec2i) { 64, 64 },
             45,
+            (vec2i) { 64, 64 },
             0xff0000ff
         );
 
