@@ -7,17 +7,14 @@
 #include "./bin/_deps/raylib-build/raylib/include/raylib.h"
 #include "./bin/_deps/raylib-build/raylib/include/raymath.h"
 
-#define SILK_PIXELBUFFER_WIDTH 800
-#define SILK_PIXELBUFFER_HEIGHT 600
-
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
 i32 RaylibSetup(Texture* texture) {
     SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(
-        SILK_PIXELBUFFER_WIDTH, 
-        SILK_PIXELBUFFER_HEIGHT, 
+        800, 
+        600, 
         "Silk 1.0 - Raylib Example"
     );
 
@@ -91,7 +88,12 @@ i32 RaylibClose(Texture* texture) {
 int main(int argc, const string argv[]) {
     // Silk's pixel buffer
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT] = { 0 };
-    i32 rotation = 0;
+
+    i32 rectangle_rotation = 0;
+    
+    const string text = "Hello, raylib!";
+    const i32 text_size = 4;
+    const i32 text_spacing = 1;
 
     // Raylib components
     Texture raylib_texture = { 0 };
@@ -105,30 +107,42 @@ int main(int argc, const string argv[]) {
     // Update-Render loop
     while(!WindowShouldClose()) {
         // Clearing the silk's pixel buffer
-        silkClearPixelBufferColor(buffer, 0xffffffff);
+        silkClearPixelBufferColorRegion(buffer, (vec2i) { GetScreenWidth(), GetScreenHeight() }, SILK_PIXELBUFFER_WIDTH, 0xffffffff);
 
-        // Draw the spinning star at the middle of the screen
-        silkDrawRectLines(
+        silkDrawRectPro(
             buffer, 
-            (vec2i) { 
-                SILK_PIXELBUFFER_CENTER_X, 
-                SILK_PIXELBUFFER_CENTER_Y
+            (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+            SILK_PIXELBUFFER_WIDTH, 
+            (vec2i) {
+                GetScreenWidth() / 2,
+                GetScreenHeight() / 2
             }, 
             (vec2i) {
-                SILK_PIXELBUFFER_HEIGHT / 4,
-                SILK_PIXELBUFFER_HEIGHT / 4
+                GetScreenHeight() / 4,
+                GetScreenHeight() / 4
             }, 
-            rotation++,
-            (vec2i) { 0 },
+            rectangle_rotation++, 
+            (vec2i) {
+                GetScreenHeight() / 8,
+                GetScreenHeight() / 8
+            }, 
             0xff0000ff
         );
 
-        silkDrawRect(
+        silkDrawTextDefault(
             buffer, 
-            (vec2i) { GetMouseX(), GetMouseY() }, 
-            (vec2i) { 64, 64 },
-            0x8800ff00
+            (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+            SILK_PIXELBUFFER_WIDTH,
+            text, 
+            (vec2i) { 
+                GetScreenWidth() / 2 - silkMeasureText(text, text_size, text_spacing).x / 2, 
+                GetScreenHeight() / 2 - silkMeasureText(text, text_size, text_spacing).y / 2 + GetScreenHeight() / 4 
+            }, 
+            text_size, 
+            text_spacing,
+            0xff000000
         );
+
 
         // Displaying the graphics on the window
         RaylibBlit(

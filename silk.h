@@ -83,7 +83,7 @@
 
 #if !defined (SILK_ALPHABLEND_DISABLE) && !defined(SILK_ALPHA_IGNORE)
     #define SILK_ALPHABLEND_ENABLE
-#endif
+#endif // SILK_ALPHABLEND_ENABLE
 
 #if !defined(SILK_PIXELBUFFER_WIDTH)
     #define SILK_PIXELBUFFER_WIDTH 1920 // SILK_PIXELBUFFER_WIDTH: Default Full HD monitor width
@@ -98,11 +98,21 @@
 
 #if !defined (SILK_BYTEORDER_LITTLE_ENDIAN) && !defined(SILK_BYTEORDER_BIG_ENDIAN) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     #define SILK_BYTEORDER_LITTLE_ENDIAN
-#endif 
+#endif // SILK_BYTEORDER_LITTLE_ENDIAN
 
 #if !defined (SILK_BYTEORDER_BIG_ENDIAN) && !defined(SILK_BYTEORDER_LITTLE_ENDIAN) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     #define SILK_BYTEORDER_BIG_ENDIAN
-#endif 
+#endif // SILK_BYTEORDER_BIG_ENDIAN
+
+#if !defined(SILK_MALLOC)
+    #include <stdlib.h>
+
+    #define SILK_MALLOC malloc
+    #define SILK_CALLOC calloc
+    #define SILK_REALLOC realloc
+    #define SILK_FREE free
+
+#endif // SILK_MALLOC, SILK_CALLOC, SILK_REALLOC, SILK_FREE
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Typedefs
@@ -120,7 +130,6 @@ typedef u32                                                                     
 typedef struct { i32 x; i32 y; }                                                        vec2i;
 typedef struct { color_channel r; color_channel g; color_channel b; color_channel a; }  color;
 
-
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: API
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -133,15 +142,15 @@ extern "C" {
 // SECTION MODULE: Pixel buffer
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API i32 silkClearPixelBuffer(pixel* buf);
-SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i size);
-SILK_API i32 silkClearPixelBufferColor(pixel* buf, pixel pix);
-SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i size, pixel pix);
+SILK_API i32 silkClearPixelBuffer(pixel* buffer);
+SILK_API i32 silkClearPixelBufferRegion(pixel* buffer, vec2i region, i32 stride);
+SILK_API i32 silkClearPixelBufferColor(pixel* buffer, pixel pix);
+SILK_API i32 silkClearPixelBufferColorRegion(pixel* buffer, vec2i region, i32 stride, pixel pix);
 
-SILK_API pixel silkGetPixel(pixel* buf, vec2i position, vec2i size);
-SILK_API i32 silkSetPixel(pixel* buf, vec2i position, vec2i size, pixel pix);
+SILK_API pixel silkGetPixel(pixel* buffer, vec2i position, i32 stride);
+SILK_API i32 silkSetPixel(pixel* buffer, vec2i position, i32 stride, pixel pix);
 
-SILK_API i32 silkUnloadBuffer(pixel* buf);
+SILK_API i32 silkUnloadBuffer(pixel* buffer);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Pixels and Colors
@@ -157,28 +166,36 @@ SILK_API pixel silkPixelTint(pixel pix, pixel tint);
 // SECTION MODULE: Rendering
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix);
+SILK_API i32 silkDrawPixel(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, pixel pix);
 
-SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix);
+SILK_API i32 silkDrawLine(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i start, vec2i end, pixel pix);
 
-SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, pixel pix);
-SILK_API i32 silkDrawRectPro(pixel* buf, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix);
-SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix);
+SILK_API i32 silkDrawRect(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, pixel pix);
+SILK_API i32 silkDrawRectPro(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix);
+SILK_API i32 silkDrawRectLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix);
 
-SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix);
-SILK_API i32 silkDrawCircleLines(pixel* buf, vec2i position, i32 radius, pixel pix);
+SILK_API i32 silkDrawCircle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, pixel pix);
+SILK_API i32 silkDrawCircleLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, pixel pix);
 
-SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
-SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
-SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i position, i32 radius, i32 angle, pixel pix);
-SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i position, i32 radius, i32 angle, pixel pix);
+SILK_API i32 silkDrawTriangle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
+SILK_API i32 silkDrawTriangleLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateral(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, pixel pix);
+SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, pixel pix);
 
-SILK_API i32 silkDrawPolygon(pixel* buf, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
-SILK_API i32 silkDrawStar(pixel* buf, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
+SILK_API i32 silkDrawPolygon(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
+SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
 
-SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size);
-SILK_API i32 silkDrawBufferScaled(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest);
-SILK_API i32 silkDrawBufferPro(pixel* buf, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint);
+SILK_API i32 silkDrawBuffer(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size);
+SILK_API i32 silkDrawBufferScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest);
+SILK_API i32 silkDrawBufferPro(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint);
+
+SILK_API i32 silkDrawTextDefault(pixel* buffer, vec2i buf_size, i32 buf_stride, const char* text, vec2i position, i32 font_size, i32 font_spacing, pixel pix);
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SECTION MODULE: Text Measurements
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API vec2i silkMeasureText(const char* text, i32 font_size, i32 font_spacing);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Logging
@@ -203,7 +220,7 @@ SILK_API i32 silkIntSwap(i32* a, i32* b);
 // --------------------------------------------------------------------------------------------------------------------------------
 
 SILK_API pixel* silkLoadPPM(const string path, vec2i* size);
-SILK_API i32 silkSavePPM(pixel* buf, const string path);
+SILK_API i32 silkSavePPM(pixel* buffer, const string path);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Error-Logging
@@ -237,6 +254,8 @@ SILK_API string silkGetError();
 // --------------------------------------------------------------------------------------------------------------------------------
 
 #define SILK_TEXT_BUFFER_SIZE 256
+#define SILK_DEFAULT_FONT_CHAR_WIDTH 3
+#define SILK_DEFAULT_FONT_CHAR_HEIGHT 5
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Error Messages
@@ -248,6 +267,765 @@ SILK_API string silkGetError();
 #define SILK_ERR_BUF_IMG_INVALID "Passed the invalid image buffer."
 #define SILK_ERR_BUF_ACCES_OUT_OF_BOUNDS "Trying to access the out-of-bounds buffer address."
 #define SILK_ERR_FILE_OPEN_FAIL "Couldn't open the file."
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SECTION: Charset
+// --------------------------------------------------------------------------------------------------------------------------------
+
+static u8 silk_charset[128][SILK_DEFAULT_FONT_CHAR_HEIGHT][SILK_DEFAULT_FONT_CHAR_WIDTH] = {
+    ['A'] = {
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+        {1,0,1},
+    },
+    
+    ['B'] = {
+        {1,1,0},
+        {1,0,1},
+        {1,1,0},
+        {1,0,1},
+        {1,1,0},
+    },
+
+    ['C'] = {
+        {1,1,0},
+        {1,0,1},
+        {1,0,0},
+        {1,0,1},
+        {1,1,0},
+    },
+
+    ['D'] = {
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,1,0},
+    },
+
+    ['E'] = {
+        {1,1,1},
+        {1,0,0},
+        {1,1,0},
+        {1,0,0},
+        {1,1,1},
+    },
+
+    ['F'] = {
+        {1,1,1},
+        {1,0,0},
+        {1,1,0},
+        {1,0,0},
+        {1,0,0},
+    },
+
+    ['G'] = {
+        {1,1,1},
+        {1,0,0},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+    },
+    
+    ['H'] = {
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['I'] = {
+        {1,1,1},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {1,1,1},
+    },
+
+    ['J'] = {
+        {1,1,1},
+        {0,0,1},
+        {0,0,1},
+        {1,0,1},
+        {0,1,0},
+    },
+
+    ['K'] = {
+        {1,0,1},
+        {1,0,1},
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['L'] = {
+        {1,0,0},
+        {1,0,0},
+        {1,0,0},
+        {1,0,0},
+        {1,1,1},
+    },
+
+    ['M'] = {
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+    },
+    
+    ['N'] = {
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['O'] = {
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {0,1,1},
+    },
+
+    ['P'] = {
+        {1,1,0},
+        {1,0,1},
+        {1,1,0},
+        {1,0,0},
+        {1,0,0},
+    },
+
+    ['Q'] = {
+        {1,1,1},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+        {0,0,1},
+    },
+
+    ['R'] = {
+        {1,1,0},
+        {1,0,1},
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['S'] = {
+        {1,1,1},
+        {1,0,0},
+        {1,1,1},
+        {0,0,1},
+        {1,1,1},
+    },
+    
+    ['T'] = {
+        {1,1,1},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    ['U'] = {
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+    },
+
+    ['V'] = {
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {0,1,0},
+    },
+
+    ['W'] = {
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+    },
+
+    ['X'] = {
+        {1,0,1},
+        {1,0,1},
+        {0,1,0},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['Y'] = {
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    ['Z'] = {
+        {1,1,1},
+        {0,0,1},
+        {0,1,0},
+        {1,0,0},
+        {1,1,1},
+    },
+
+    ['a'] = {
+        {0,0,0},
+        {0,1,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+    },
+    
+    ['b'] = {
+        {1,0,0},
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+        {0,1,0},
+    },
+
+    ['c'] = {
+        {0,0,0},
+        {0,1,1},
+        {1,0,0},
+        {1,0,0},
+        {0,1,1},
+    },
+
+    ['d'] = {
+        {0,0,1},
+        {0,1,1},
+        {1,0,1},
+        {1,0,1},
+        {0,1,1},
+    },
+
+    ['e'] = {
+        {0,0,0},
+        {1,1,1},
+        {1,1,1},
+        {1,0,0},
+        {1,1,1},
+    },
+
+    ['f'] = {
+        {0,1,1},
+        {0,1,0},
+        {1,1,1},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    ['g'] = {
+        {0,0,0},
+        {1,1,1},
+        {1,0,0},
+        {1,0,1},
+        {1,1,1},
+    },
+    
+    ['h'] = {
+        {1,0,0},
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['i'] = {
+        {0,1,0},
+        {0,0,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    ['j'] = {
+        {0,0,0},
+        {1,1,1},
+        {0,0,1},
+        {0,0,1},
+        {0,1,0},
+    },
+
+    ['k'] = {
+        {1,0,0},
+        {1,0,1},
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['l'] = {
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,0,1},
+    },
+
+    ['m'] = {
+        {0,0,0},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+        {1,0,1},
+    },
+    
+    ['n'] = {
+        {0,0,0},
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['o'] = {
+        {0,0,0},
+        {1,1,0},
+        {1,0,1},
+        {1,0,1},
+        {0,1,1},
+    },
+
+    ['p'] = {
+        {0,0,0},
+        {1,1,0},
+        {1,0,1},
+        {1,1,0},
+        {1,0,0},
+    },
+
+    ['q'] = {
+        {0,0,0},
+        {0,1,1},
+        {1,0,1},
+        {0,1,1},
+        {0,0,1},
+    },
+
+    ['r'] = {
+        {0,0,0},
+        {1,0,1},
+        {1,1,0},
+        {1,0,0},
+        {1,0,0},
+    },
+
+    ['s'] = {
+        {0,0,0},
+        {0,1,1},
+        {1,0,0},
+        {0,0,1},
+        {1,1,0},
+    },
+    
+    ['t'] = {
+        {0,1,0},
+        {1,1,1},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    ['u'] = {
+        {0,0,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+    },
+
+    ['v'] = {
+        {0,0,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {0,1,0},
+    },
+
+    ['w'] = {
+        {0,0,0},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+    },
+
+    ['x'] = {
+        {0,0,0},
+        {1,0,1},
+        {0,1,0},
+        {1,0,1},
+        {1,0,1},
+    },
+
+    ['y'] = {
+        {0,0,0},
+        {1,0,1},
+        {1,1,1},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    ['z'] = {
+        {0,0,0},
+        {1,1,1},
+        {0,0,1},
+        {0,1,0},
+        {1,1,1},
+    },
+
+    ['1'] = {
+        {1,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {1,1,1},
+    },
+
+    ['2'] = {
+        {1,1,1},
+        {0,0,1},
+        {1,1,1},
+        {1,0,0},
+        {1,1,1},
+    },
+
+    ['3'] = {
+        {1,1,1},
+        {0,0,1},
+        {0,1,1},
+        {0,0,1},
+        {1,1,1},
+    },
+
+    ['4'] = {
+        {1,0,0},
+        {1,0,1},
+        {1,1,1},
+        {0,0,1},
+        {0,0,1},
+    },
+
+    ['5'] = {
+        {1,1,1},
+        {1,0,0},
+        {1,1,1},
+        {0,0,1},
+        {1,1,1},
+    },
+
+    ['6'] = {
+        {1,1,1},
+        {1,0,0},
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+    },
+
+    ['7'] = {
+        {1,1,1},
+        {0,0,1},
+        {0,1,1},
+        {0,0,1},
+        {0,0,1},
+    },
+
+    ['8'] = {
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+    },
+
+    ['9'] = {
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+        {0,0,1},
+        {1,1,1},
+    },
+
+    ['0'] = {
+        {1,1,1},
+        {1,0,1},
+        {1,0,1},
+        {1,0,1},
+        {1,1,1},
+    },
+
+    [','] = {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    ['.'] = {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,1,0},
+    },
+
+    ['?'] = {
+        {1,1,1},
+        {0,0,1},
+        {0,1,1},
+        {0,0,0},
+        {0,1,0},
+    },
+
+    ['!'] = {
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,0,0},
+        {0,1,0},
+    },
+
+    [' '] = {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['-'] = {
+        {0,0,0},
+        {0,0,0},
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['_'] = {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {1,1,1},
+    },
+    
+    ['='] = {
+        {0,0,0},
+        {1,1,1},
+        {0,0,0},
+        {1,1,1},
+        {0,0,0},
+    },
+    
+    ['+'] = {
+        {0,0,0},
+        {0,1,0},
+        {1,1,1},
+        {0,1,0},
+        {0,0,0},
+    },
+    
+    ['/'] = {
+        {0,0,1},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {1,0,0},
+    },
+    
+    ['|'] = {
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+    },
+        
+    ['\\'] = {
+        {1,0,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,0,1},
+    },
+  
+    [';'] = {
+        {0,0,0},
+        {0,1,0},
+        {0,0,0},
+        {0,1,0},
+        {0,1,0},
+    },
+
+    [':'] = {
+        {0,0,0},
+        {0,1,0},
+        {0,0,0},
+        {0,1,0},
+        {0,0,0},
+    },
+
+    ['('] = {
+        {0,1,0},
+        {1,0,0},
+        {1,0,0},
+        {1,0,0},
+        {0,1,0},
+    },
+
+    [')'] = {
+        {0,1,0},
+        {0,0,1},
+        {0,0,1},
+        {0,0,1},
+        {0,1,0},
+    },
+
+    ['{'] = {
+        {0,0,1},
+        {0,1,0},
+        {1,1,0},
+        {0,1,0},
+        {0,0,1},
+    },
+
+    ['}'] = {
+        {1,0,0},
+        {0,1,0},
+        {0,1,1},
+        {0,1,0},
+        {1,0,0},
+    },
+
+    ['['] = {
+        {0,1,1},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,1},
+    },
+
+    [']'] = {
+        {1,1,0},
+        {0,1,0},
+        {0,1,0},
+        {0,1,0},
+        {1,1,0},
+    },
+
+    ['<'] = {
+        {0,0,1},
+        {0,1,0},
+        {1,0,0},
+        {0,1,0},
+        {0,0,1},
+    },
+
+    ['>'] = {
+        {1,0,0},
+        {0,1,0},
+        {0,0,1},
+        {0,1,0},
+        {1,0,0},
+    },
+
+    ['^'] = {
+        {0,1,0},
+        {1,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['\''] = {
+        {0,1,0},
+        {0,1,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['\"'] = {
+        {1,0,1},
+        {1,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['#'] = {
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+        {1,0,1},
+    },
+
+    ['%'] = {
+        {1,0,1},
+        {0,0,1},
+        {0,1,0},
+        {1,0,0},
+        {1,0,1},
+    },
+
+    ['*'] = {
+        {1,0,1},
+        {0,1,0},
+        {1,0,1},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['`'] = {
+        {0,1,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['~'] = {
+        {0,0,0},
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+    },
+
+    ['@'] = {
+        {0,1,0},
+        {1,0,1},
+        {1,0,1},
+        {1,0,0},
+        {0,1,1},
+    },
+
+    ['&'] = {
+        {1,1,0},
+        {1,1,0},
+        {1,1,1},
+        {1,0,1},
+        {1,1,1},
+    },
+    
+};
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Internals
@@ -276,96 +1054,96 @@ static i32 silkAssignErrorMessage(const string msg) {
 // SECTION MODULE: Pixel buffer
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API i32 silkClearPixelBuffer(pixel* buf) {
-    if(buf == NULL) {
+SILK_API i32 silkClearPixelBuffer(pixel* buffer) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
     for(i32 pixel_index = 0; pixel_index < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; pixel_index++) {
-        buf[pixel_index] = 0;
+        buffer[pixel_index] = 0;
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkClearPixelBufferRegion(pixel* buf, vec2i size) {
-    if(buf == NULL) {
+SILK_API i32 silkClearPixelBufferRegion(pixel* buffer, vec2i region, i32 stride) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
-    for(i32 y = 0; y < size.y; y++) {
-        for(i32 x = 0; x < size.x; x++) {
-            silkSetPixel(buf, (vec2i) { x, y }, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, 0);
+    for(i32 y = 0; y < region.y; y++) {
+        for(i32 x = 0; x < region.x; x++) {
+            silkSetPixel(buffer, (vec2i) { x, y }, stride, 0);
         }
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkClearPixelBufferColor(pixel* buf, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkClearPixelBufferColor(pixel* buffer, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
     for(i32 pixel_index = 0; pixel_index < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; pixel_index++) {
-        buf[pixel_index] = pix;
+        buffer[pixel_index] = pix;
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkClearPixelBufferColorRegion(pixel* buf, vec2i size, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkClearPixelBufferColorRegion(pixel* buffer, vec2i region, i32 stride, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
-    for(i32 y = 0; y < size.y; y++) {
-        for(i32 x = 0; x < size.x; x++) {
-            silkSetPixel(buf, (vec2i) { x, y }, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, pix);
+    for(i32 y = 0; y < region.y; y++) {
+        for(i32 x = 0; x < region.x; x++) {
+            silkSetPixel(buffer, (vec2i) { x, y }, stride, pix);
         }
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API pixel silkGetPixel(pixel* buf, vec2i position, vec2i size) {
-    if(buf == NULL) {
+SILK_API pixel silkGetPixel(pixel* buffer, vec2i position, i32 stride) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return 0xffffffff;
     }
 
-    return buf[position.y * size.x + position.x];
+    return buffer[position.y * stride + position.x];
 }
 
-SILK_API i32 silkSetPixel(pixel* buf, vec2i position, vec2i size, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkSetPixel(pixel* buffer, vec2i position, i32 stride, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
-    buf[position.y * size.x + position.x] = pix;
+    buffer[position.y * stride + position.x] = pix;
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkUnloadBuffer(pixel* buf) {
-    if(buf == NULL) {
+SILK_API i32 silkUnloadBuffer(pixel* buffer) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
-    free(buf);
+    free(buffer);
 
     return SILK_SUCCESS;
 }
@@ -475,15 +1253,15 @@ SILK_API pixel silkPixelTint(pixel pix, pixel tint) {
 // SECTION MODULE: Rendering
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawPixel(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
     }
 
-    if( (position.x < 0 || position.x >= SILK_PIXELBUFFER_WIDTH) ||
-        (position.y < 0 || position.y >= SILK_PIXELBUFFER_HEIGHT)) {
+    if( (position.x < 0 || position.x >= buf_size.x) ||
+        (position.y < 0 || position.y >= buf_size.y)) {
         silkAssignErrorMessage(SILK_ERR_BUF_ACCES_OUT_OF_BOUNDS);
 
         return SILK_FAILURE;
@@ -491,7 +1269,7 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
 
     // If the pixel from this position is the same as the pixel we want to draw, we can return, 
     // as there won't be any change in this specific position.
-    if(silkGetPixel(buf, position, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }) == pix) {
+    if(silkGetPixel(buffer, position, buf_stride) == pix) {
         return SILK_SUCCESS;
 
     } 
@@ -500,7 +1278,7 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
 
     else {
         pix = silkAlphaBlend(
-            silkGetPixel(buf, position, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT } ), 
+            silkGetPixel(buffer, position, buf_stride), 
             pix, 
             silkPixelToColor(pix).a
         );
@@ -509,17 +1287,17 @@ SILK_API i32 silkDrawPixel(pixel* buf, vec2i position, pixel pix) {
 #endif
 
     silkSetPixel(
-        buf, 
+        buffer, 
         position, 
-        (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, 
+        buf_stride, 
         pix
     );
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawLine(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i start, vec2i end, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
 
         return SILK_FAILURE;
@@ -541,7 +1319,7 @@ SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix) {
     dy /= steps;
 
     for(int i = 0; i <= steps; i++) {
-        silkDrawPixel(buf, (vec2i) { round(x), round(y) } , pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { round(x), round(y) } , pix);
         x += dx;
         y += dy;
     }
@@ -549,18 +1327,20 @@ SILK_API i32 silkDrawLine(pixel* buf, vec2i start, vec2i end, pixel pix) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawRect(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
 
     silkDrawRectPro(
-        buf, 
+        buffer, 
+        buf_size,
+        buf_stride,
         position, 
         size, 
-        0, 
+        (i32) 0, 
         (vec2i) { 0 },
         pix
     );
@@ -568,8 +1348,8 @@ SILK_API i32 silkDrawRect(pixel* buf, vec2i position, vec2i size, pixel pix) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRectPro(pixel* buf, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawRectPro(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -622,7 +1402,9 @@ SILK_API i32 silkDrawRectPro(pixel* buf, vec2i position, vec2i size, i32 angle, 
     // 1 - 2 - 3
 
     silkDrawTriangle(
-        buf, 
+        buffer, 
+        buf_size,
+        buf_stride,
         points[0], 
         points[1], 
         points[2], 
@@ -630,7 +1412,9 @@ SILK_API i32 silkDrawRectPro(pixel* buf, vec2i position, vec2i size, i32 angle, 
     );
 
     silkDrawTriangle(
-        buf, 
+        buffer, 
+        buf_size,
+        buf_stride,
         points[1], 
         points[2], 
         points[3], 
@@ -640,8 +1424,8 @@ SILK_API i32 silkDrawRectPro(pixel* buf, vec2i position, vec2i size, i32 angle, 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawRectLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -690,7 +1474,9 @@ SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, i32 angle
 
     for(i32 i = 0; i < 4; i++) {
         silkDrawLine(
-            buf, 
+            buffer, 
+            buf_size,
+            buf_stride,
             points[i], 
             i + 1 < 4 ? points[i + 1] : points[0], 
             pix
@@ -699,8 +1485,8 @@ SILK_API i32 silkDrawRectLines(pixel* buf, vec2i position, vec2i size, i32 angle
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawCircle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -720,7 +1506,7 @@ SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
             };
 
             if((delta.x * delta.x) + (delta.y * delta.y) <= (radius * radius)) {
-                silkDrawPixel(buf, (vec2i) { x, y }, pix);
+                silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { x, y }, pix);
             }
         }
     }
@@ -728,11 +1514,11 @@ SILK_API i32 silkDrawCircle(pixel* buf, vec2i position, i32 radius, pixel pix) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawCircleLines(pixel* buf, vec2i position, i32 radius, pixel pix) {
+SILK_API i32 silkDrawCircleLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, pixel pix) {
     // Source:
     // https://www.geeksforgeeks.org/bresenhams-circle-drawing-algorithm/
 
-    if(buf == NULL) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -742,14 +1528,14 @@ SILK_API i32 silkDrawCircleLines(pixel* buf, vec2i position, i32 radius, pixel p
     i32 y = radius;
     i32 d = 3 - 2 * radius;
 
-    silkDrawPixel(buf, (vec2i) { position.x + x, position.y + y }, pix);
-    silkDrawPixel(buf, (vec2i) { position.x - x, position.y + y }, pix);
-    silkDrawPixel(buf, (vec2i) { position.x + x, position.y - y }, pix);
-    silkDrawPixel(buf, (vec2i) { position.x - x, position.y - y }, pix);
-    silkDrawPixel(buf, (vec2i) { position.x + y, position.y + x }, pix);
-    silkDrawPixel(buf, (vec2i) { position.x - y, position.y + x }, pix);
-    silkDrawPixel(buf, (vec2i) { position.x + y, position.y - x }, pix);
-    silkDrawPixel(buf, (vec2i) { position.x - y, position.y - x }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + x, position.y + y }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - x, position.y + y }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + x, position.y - y }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - x, position.y - y }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + y, position.y + x }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - y, position.y + x }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + y, position.y - x }, pix);
+    silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - y, position.y - x }, pix);
 
     while(y >= x) {
         x++;
@@ -761,24 +1547,24 @@ SILK_API i32 silkDrawCircleLines(pixel* buf, vec2i position, i32 radius, pixel p
             d += 4 * x + 6;
         }
 
-        silkDrawPixel(buf, (vec2i) { position.x + x, position.y + y }, pix);
-        silkDrawPixel(buf, (vec2i) { position.x - x, position.y + y }, pix);
-        silkDrawPixel(buf, (vec2i) { position.x + x, position.y - y }, pix);
-        silkDrawPixel(buf, (vec2i) { position.x - x, position.y - y }, pix);
-        silkDrawPixel(buf, (vec2i) { position.x + y, position.y + x }, pix);
-        silkDrawPixel(buf, (vec2i) { position.x - y, position.y + x }, pix);
-        silkDrawPixel(buf, (vec2i) { position.x + y, position.y - x }, pix);
-        silkDrawPixel(buf, (vec2i) { position.x - y, position.y - x }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + x, position.y + y }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - x, position.y + y }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + x, position.y - y }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - x, position.y - y }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + y, position.y + x }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - y, position.y + x }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x + y, position.y - x }, pix);
+        silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { position.x - y, position.y - x }, pix);
     }
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
+SILK_API i32 silkDrawTriangle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
     // Source:
     // https://github.com/tsoding/olive.c/commit/633c657dbea3435a64114570ecb3f703fa276f28
 
-    if(buf == NULL) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -823,7 +1609,7 @@ SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i po
             }
 
             for(i32 x = s1; x <= s2; x++) {
-                silkDrawPixel(buf, (vec2i) { x, y }, pix);
+                silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { x, y }, pix);
             }
         }
     }
@@ -843,7 +1629,7 @@ SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i po
             }
 
             for(i32 x = s1; x <= s2; x++) {
-                silkDrawPixel(buf, (vec2i) { x, y }, pix);
+                silkDrawPixel(buffer, buf_size, buf_stride, (vec2i) { x, y }, pix);
             }
         }
     }
@@ -851,8 +1637,8 @@ SILK_API i32 silkDrawTriangle(pixel* buf, vec2i point_a, vec2i point_b, vec2i po
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawTriangleLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -862,18 +1648,18 @@ SILK_API i32 silkDrawTriangleLines(pixel* buf, vec2i point_a, vec2i point_b, vec
     if(point_a.y > point_c.y) silkVectorSwap(&point_a, &point_c);
     if(point_b.y > point_c.y) silkVectorSwap(&point_b, &point_c);
 
-    silkDrawLine(buf, point_a, point_b, pix);
-    silkDrawLine(buf, point_b, point_c, pix);
-    silkDrawLine(buf, point_a, point_c, pix);
+    silkDrawLine(buffer, buf_size, buf_stride, point_a, point_b, pix);
+    silkDrawLine(buffer, buf_size, buf_stride, point_b, point_c, pix);
+    silkDrawLine(buffer, buf_size, buf_stride, point_a, point_c, pix);
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i position, i32 radius, i32 angle, pixel pix) {
+SILK_API i32 silkDrawTriangleEquilateral(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, pixel pix) {
     // Source:
     // https://www.quora.com/How-do-you-calculate-the-triangle-vertices-coordinates-on-a-circumcircle-triangle-with-a-given-centre-point-and-radius-Assuming-the-triangle-is-acute-with-all-equal-length-sides-and-that-one-point-is-straight-up
 
-    if(buf == NULL) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -902,13 +1688,13 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel* buf, vec2i position, i32 radius,
         points[i].y = position.y + (y_right * dx + y_up * dy);
     }
 
-    silkDrawTriangle(buf, points[0], points[1], points[2], pix);
+    silkDrawTriangle(buffer, buf_size, buf_stride, points[0], points[1], points[2], pix);
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i position, i32 radius, i32 angle, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -937,13 +1723,13 @@ SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buf, vec2i position, i32 ra
         points[i].y = position.y + (y_right * dx + y_up * dy);
     }
 
-    silkDrawTriangleLines(buf, points[0], points[1], points[2], pix);
+    silkDrawTriangleLines(buffer, buf_size, buf_stride, points[0], points[1], points[2], pix);
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawPolygon(pixel* buf, vec2i position, i32 radius, i32 angle, i32 n, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawPolygon(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -968,7 +1754,9 @@ SILK_API i32 silkDrawPolygon(pixel* buf, vec2i position, i32 radius, i32 angle, 
     // Drawing triangles based on the points
     for(i32 i = 0; i < n; i++) {
         silkDrawTriangle(
-            buf, 
+            buffer, 
+            buf_size,
+            buf_stride,
             position,                               // First point is always position
             points[i],                              // second point is based on the current 'i'
             i < n - 1 ? points[i + 1] : points[0],  // third point is based on the next index from 'i' OR the very first point of the array if we reach it's end
@@ -979,8 +1767,8 @@ SILK_API i32 silkDrawPolygon(pixel* buf, vec2i position, i32 radius, i32 angle, 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawStar(pixel* buf, vec2i position, i32 radius, i32 angle, i32 n, pixel pix) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -1011,7 +1799,9 @@ SILK_API i32 silkDrawStar(pixel* buf, vec2i position, i32 radius, i32 angle, i32
         };
 
         silkDrawTriangle(
-            buf, 
+            buffer, 
+            buf_size,
+            buf_stride,
             point_a, 
             point_b, 
             point_c, 
@@ -1023,8 +1813,8 @@ SILK_API i32 silkDrawStar(pixel* buf, vec2i position, i32 radius, i32 angle, i32
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i size) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawBuffer(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -1037,7 +1827,9 @@ SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i si
     }
 
     silkDrawBufferPro(
-        buf, 
+        buffer, 
+        buf_size,
+        buf_stride,
         img_buf, 
         position, 
         (vec2i) { 0 },
@@ -1049,8 +1841,8 @@ SILK_API i32 silkDrawBuffer(pixel* buf, pixel* img_buf, vec2i position, vec2i si
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawBufferScaled(pixel* buf, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawBufferScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -1063,7 +1855,9 @@ SILK_API i32 silkDrawBufferScaled(pixel* buf, pixel* img_buf, vec2i position, ve
     }
 
     silkDrawBufferPro(
-        buf, 
+        buffer, 
+        buf_size,
+        buf_stride,
         img_buf, 
         position,
         (vec2i) { 0 }, 
@@ -1075,8 +1869,8 @@ SILK_API i32 silkDrawBufferScaled(pixel* buf, pixel* img_buf, vec2i position, ve
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawBufferPro(pixel* buf, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint) {
-    if(buf == NULL) {
+SILK_API i32 silkDrawBufferPro(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint) {
+    if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
@@ -1096,13 +1890,15 @@ SILK_API i32 silkDrawBufferPro(pixel* buf, pixel* img_buf, vec2i position, vec2i
             };
 
             silkDrawPixel(
-                buf, 
+                buffer,
+                buf_size, 
+                buf_stride,
                 (vec2i) { (position.x - offset.x) + x, (position.y - offset.y) + y },
                 silkPixelTint(
                     silkGetPixel(
                         img_buf, 
                         new_position, 
-                        size_src
+                        size_src.x
                     ),
                     tint
                 )
@@ -1111,6 +1907,54 @@ SILK_API i32 silkDrawBufferPro(pixel* buf, pixel* img_buf, vec2i position, vec2i
     }
 
     return SILK_SUCCESS;
+}
+
+SILK_API i32 silkDrawTextDefault(pixel* buffer, vec2i buf_size, i32 buf_stride, const char* text, vec2i position, i32 font_size, i32 font_spacing, pixel pix) {
+    if(buffer == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return SILK_FAILURE;
+    }
+
+    vec2i glyph_position = {
+        position.x / font_size,
+        position.y / font_size
+    };
+
+    for(i32 glyph_index = 0; text[glyph_index] != '\0'; glyph_index++) {
+        const char current_char = text[glyph_index];
+
+        for(i32 y = 0; y < SILK_DEFAULT_FONT_CHAR_HEIGHT; y++) {
+            for(i32 x = 0; x < SILK_DEFAULT_FONT_CHAR_WIDTH; x++) {
+                silkDrawRect(
+                    buffer, 
+                    buf_size,
+                    buf_stride, 
+                    (vec2i) { (glyph_position.x + x) * font_size, (glyph_position.y + y) * font_size }, 
+                    (vec2i) { font_size, font_size }, 
+                    pix * silk_charset[current_char][y][x]
+                );
+            }
+        }
+
+        glyph_position.x += SILK_DEFAULT_FONT_CHAR_WIDTH + font_spacing;
+    }
+
+    return SILK_SUCCESS;
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SECTION MODULE: Text Measurements
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API vec2i silkMeasureText(const char* text, i32 font_size, i32 font_spacing) {
+    i32 column_count = strlen(text);
+    i32 row_count = 1;
+
+    return (vec2i) {
+        .x = SILK_DEFAULT_FONT_CHAR_WIDTH * font_size * column_count + font_size * font_spacing * (column_count - 1),
+        .y = SILK_DEFAULT_FONT_CHAR_HEIGHT * font_size * row_count
+    };
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -1124,21 +1968,21 @@ SILK_API i32 silkLogInfo(const string text, ...) {
 
 #endif
 
-    char buf[SILK_TEXT_BUFFER_SIZE];
+    char buffer[SILK_TEXT_BUFFER_SIZE];
 
     va_list list;
     va_start(list, text);
 
     vsnprintf(
-        buf, 
-        sizeof(buf), 
+        buffer, 
+        sizeof(buffer), 
         text, 
         list
     );
 
     va_end(list);
 
-    fprintf(stdout, "[INFO] %s\n", buf);
+    fprintf(stdout, "[INFO] %s\n", buffer);
 
     return SILK_SUCCESS;
 }
@@ -1150,21 +1994,21 @@ SILK_API i32 silkLogWarn(const string text, ...) {
 
 #endif
 
-    char buf[SILK_TEXT_BUFFER_SIZE];
+    char buffer[SILK_TEXT_BUFFER_SIZE];
 
     va_list list;
     va_start(list, text);
 
     vsnprintf(
-        buf, 
-        sizeof(buf), 
+        buffer, 
+        sizeof(buffer), 
         text, 
         list
     );
 
     va_end(list);
 
-    fprintf(stdout, "[WARN] %s\n", buf);
+    fprintf(stdout, "[WARN] %s\n", buffer);
 
     return SILK_SUCCESS;
 }
@@ -1176,21 +2020,21 @@ SILK_API i32 silkLogErr(const string text, ...) {
 
 #endif
 
-    char buf[SILK_TEXT_BUFFER_SIZE];
+    char buffer[SILK_TEXT_BUFFER_SIZE];
 
     va_list list;
     va_start(list, text);
 
     vsnprintf(
-        buf, 
-        sizeof(buf), 
+        buffer, 
+        sizeof(buffer), 
         text, 
         list
     );
 
     va_end(list);
 
-    fprintf(stdout, "[ERR] %s\n", buf);
+    fprintf(stdout, "[ERR] %s\n", buffer);
 
     return SILK_SUCCESS;
 }
@@ -1262,7 +2106,7 @@ SILK_API pixel* silkLoadPPM(const string path, vec2i* size) {
     // You can learn more about PPM format here:
     // https://netpbm.sourceforge.net/doc/ppm.html
 
-    FILE* file = fopen(path, "r");
+    FILE* file = fopen(path, "rb");
     if(!file) {
         silkAssignErrorMessage(SILK_ERR_FILE_OPEN_FAIL);
         return NULL;
@@ -1304,11 +2148,13 @@ SILK_API i32 silkSavePPM(pixel* image_buf, const string path) {
 
     fprintf(
         file, 
-        "P6\n"      // PPM Magic Number
+        "%s\n"      // PPM Magic Number
         "%i %i\n"   // PPM image's width and height
-        "255\n",    // PPM max color information (maximum color value can be 225)
-        SILK_PIXELBUFFER_WIDTH, 
-        SILK_PIXELBUFFER_HEIGHT
+        "%u\n",     // PPM max color information (maximum color value can be 225)
+        (string) "P6",
+        (i32) SILK_PIXELBUFFER_WIDTH, 
+        (i32) SILK_PIXELBUFFER_HEIGHT,
+        (u8) 255
     );
 
     if(ferror(file)) {
@@ -1348,7 +2194,6 @@ SILK_API i32 silkSavePPM(pixel* image_buf, const string path) {
 SILK_API string silkGetError() {
     return silk_error_msg;
 }
-
 
 #endif // SILK_IMPLEMENTATION
 

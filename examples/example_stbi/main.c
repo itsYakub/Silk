@@ -48,13 +48,14 @@ i32 StbiRenderImage(pixel* buf, pixel* image, vec2i position, vec2i size, i32 sc
     }
 
     silkDrawBufferPro(
-        buf,                                            // Main pixel buffer
-        image,                                          // Image buffer
-        position,                                       // Image position
-        (vec2i) { size.x / 2, size.y / 2 },             // Image position offset        
-        size,                                           // Image size (source)
-        (vec2i) { size.x * scale, size.y * scale },     // Image size (destination)
-        0xffffffff                                      // Image tint
+        buf,                                                        // Main pixel-buffer
+        SILK_PIXELBUFFER_WIDTH,                                     // Stride of the pixel-buffer
+        image,                                                      // Image buffer
+        position,                                                   // Image position
+        (vec2i) { size.x / 2, size.y / 2 },                         // Image position offset        
+        size,                                                       // Image size (source)
+        (vec2i) { size.x * scale, size.y * scale },                 // Image size (destination)
+        0xffffffff                                                  // Image tint
     );
 
     return SILK_SUCCESS;
@@ -66,14 +67,45 @@ int main(int argc, const string argv[]) {
     vec2i size = { 0 };
     pixel* image = StbiLoadImage("turtle.png", &size);
 
+    const string text = "Hello, Stb_Image!";
+    const i32 text_size = 4;
+    const i32 text_spacing = 1;
+
     silkClearPixelBufferColor(buffer, 0xffffffff);
 
-    StbiRenderImage(
+    silkDrawBufferPro(
         buffer, 
+        (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+        SILK_PIXELBUFFER_WIDTH, 
         image, 
-        (vec2i) { SILK_PIXELBUFFER_WIDTH / 2, SILK_PIXELBUFFER_HEIGHT / 2 }, 
+        (vec2i) {
+            SILK_PIXELBUFFER_CENTER_X,
+            SILK_PIXELBUFFER_CENTER_Y
+        }, 
+        (vec2i) {
+            size.x / 4,
+            size.y / 4
+        }, 
         size,
-        1
+        (vec2i) {
+            size.x / 2,
+            size.y / 2
+        },
+        0xffffffff
+    );
+
+    silkDrawTextDefault(
+        buffer, 
+        (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+        SILK_PIXELBUFFER_WIDTH,
+        text, 
+        (vec2i) { 
+            SILK_PIXELBUFFER_CENTER_X - silkMeasureText(text, text_size, text_spacing).x / 2, 
+            SILK_PIXELBUFFER_CENTER_Y - silkMeasureText(text, text_size, text_spacing).y / 2 + SILK_PIXELBUFFER_CENTER_Y / 2 
+        }, 
+        text_size, 
+        text_spacing,
+        0xff000000
     );
 
     silkSavePPM(buffer, "output.ppm");

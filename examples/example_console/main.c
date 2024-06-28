@@ -46,10 +46,12 @@ i32 main(int argc, const string argv[]) {
     silkClearPixelBuffer(buffer);
     silkDrawRectPro(
         buffer, 
+        (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+        SILK_PIXELBUFFER_WIDTH, 
         (vec2i) { SILK_PIXELBUFFER_WIDTH / 2, SILK_PIXELBUFFER_HEIGHT / 2 }, 
         (vec2i) { SILK_PIXELBUFFER_HEIGHT / 4, SILK_PIXELBUFFER_HEIGHT / 4 }, 
-        (vec2i) { SILK_PIXELBUFFER_HEIGHT / 8, SILK_PIXELBUFFER_HEIGHT / 8 },
         0,
+        (vec2i) { SILK_PIXELBUFFER_HEIGHT / 8, SILK_PIXELBUFFER_HEIGHT / 8 },
         0xffffffff
     );
 

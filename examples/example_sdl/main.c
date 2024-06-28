@@ -11,10 +11,8 @@
 #include "bin/_deps/sdl2-src/include/SDL_events.h"
 #include "bin/_deps/sdl2-src/include/SDL_pixels.h"
 #include "bin/_deps/sdl2-src/include/SDL_render.h"
+#include "bin/_deps/sdl2-src/include/SDL_timer.h"
 #include "bin/_deps/sdl2-src/include/SDL_video.h"
-
-#define SILK_PIXELBUFFER_WIDTH 800
-#define SILK_PIXELBUFFER_HEIGHT 600
 
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
@@ -109,6 +107,9 @@ i32 SDLBlit(pixel* buffer, SDL_Renderer* renderer, SDL_Texture* texture) {
         return SILK_FAILURE;
     }
 
+    vec2i sdl_renderer_size = { 0 };
+    SDL_GetRendererOutputSize(renderer, &sdl_renderer_size.x, &sdl_renderer_size.y);
+
     SDL_Rect source_rect = {
         0,
         0,
@@ -119,8 +120,8 @@ i32 SDLBlit(pixel* buffer, SDL_Renderer* renderer, SDL_Texture* texture) {
     SDL_Rect destination_rect = {
         0,
         0,
-        SILK_PIXELBUFFER_WIDTH,
-        SILK_PIXELBUFFER_HEIGHT
+        sdl_renderer_size.x,
+        sdl_renderer_size.y
     };
 
     SDL_UpdateTexture(
@@ -172,10 +173,19 @@ int main(int argc, const string argv[]) {
     // Silk's pixel buffer
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
+    i32 rectangle_rotation = 0;
+    
+    const string text = "Hello, SDL2!";
+    const i32 text_size = 4;
+    const i32 text_spacing = 1;
+
+
     // SDL components
     SDL_Window*     sdl_window;
     SDL_Renderer*   sdl_renderer;
     SDL_Texture*    sdl_texture;
+
+    vec2i           sdl_window_size = { 0 };
 
     // Setting-up SDL components
     SDLSetup(
@@ -199,17 +209,43 @@ int main(int argc, const string argv[]) {
             }
         }
 
+        SDL_GetWindowSize(sdl_window, &sdl_window_size.x, &sdl_window_size.y);
+
         // Clearing the silk's pixel buffer
-        silkClearPixelBufferColor(buffer, 0xffffffff);
+        silkClearPixelBufferColorRegion(buffer, sdl_window_size, SILK_PIXELBUFFER_WIDTH, 0xffffffff);
         
-        // Draw the rectangle at the middle of the screen
         silkDrawRectPro(
             buffer, 
-            (vec2i) { SILK_PIXELBUFFER_CENTER_X, SILK_PIXELBUFFER_CENTER_Y}, 
-            (vec2i) { 128, 128 }, 
-            45,
-            (vec2i) { 64, 64 },
+            (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+            SILK_PIXELBUFFER_WIDTH, 
+            (vec2i) {
+                sdl_window_size.x / 2,
+                sdl_window_size.y / 2
+            }, 
+            (vec2i) {
+                sdl_window_size.y / 4,
+                sdl_window_size.y / 4
+            }, 
+            rectangle_rotation++, 
+            (vec2i) {
+                sdl_window_size.y / 8,
+                sdl_window_size.y / 8
+            }, 
             0xff0000ff
+        );
+
+        silkDrawTextDefault(
+            buffer, 
+            (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+            SILK_PIXELBUFFER_WIDTH,
+            text, 
+            (vec2i) { 
+                sdl_window_size.x / 2 - silkMeasureText(text, text_size, text_spacing).x / 2, 
+                sdl_window_size.y / 2 - silkMeasureText(text, text_size, text_spacing).y / 2 + sdl_window_size.y / 4 
+            }, 
+            text_size, 
+            text_spacing,
+            0xff000000
         );
 
         // Displaying the graphics on the window

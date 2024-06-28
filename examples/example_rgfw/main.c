@@ -83,7 +83,7 @@ int main(int argc, const string argv[]) {
                         angleDir = (angleDir == 1) ? -1 : 1;
                     }
 
-                    silkDrawStar((pixel*)window->buffer, (vec2i){window->event.point.x, window->event.point.y}, 10, 0, 8, 0xffeaddca);
+                    silkDrawStar((pixel*)window->buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, SILK_PIXELBUFFER_WIDTH, (vec2i){window->event.point.x, window->event.point.y}, 10, 0, 8, 0xffeaddca);
                 }
             }
         }
@@ -94,6 +94,8 @@ int main(int argc, const string argv[]) {
         // Draw the rectangle at the middle of the screen
         silkDrawRectPro(
             (pixel*)window->buffer, 
+            (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+            SILK_PIXELBUFFER_WIDTH,
             (vec2i) { (window->r.w / 2), SILK_PIXELBUFFER_CENTER_Y}, 
             (vec2i) { 128, 128 }, 
             angle,
@@ -102,15 +104,15 @@ int main(int argc, const string argv[]) {
         );
         angle += angleDir;
 
-        silkDrawCircle((pixel*)window->buffer, circlePoint, 20, 0xff00ff00);
+        silkDrawCircle((pixel*)window->buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, SILK_PIXELBUFFER_WIDTH, circlePoint, 20, 0xff00ff00);
 
         RGFW_vector v = RGFW_window_getMousePoint(window);
         if (star == 1) {
-            silkDrawStar((pixel*)window->buffer, (vec2i){v.x, v.y}, 10, 0, 5, 0xff00FFFF);
+            silkDrawStar((pixel*)window->buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, SILK_PIXELBUFFER_WIDTH, (vec2i){v.x, v.y}, 10, 0, 5, 0xff00FFFF);
         }
 
         if (star == 3)
-            silkDrawBuffer((pixel*)window->buffer, (pixel*)icon, (vec2i){v.x, v.y}, (vec2i) {3, 3});
+            silkDrawBuffer((pixel*)window->buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, SILK_PIXELBUFFER_WIDTH, (pixel*)icon, (vec2i){v.x, v.y}, (vec2i) {3, 3});
 
         if (RGFW_isPressedI(window, RGFW_Up))
             circlePoint.y--;
