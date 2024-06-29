@@ -203,7 +203,7 @@ i32 main(i32 argc, const string argv[]) {
 
         silkClearPixelBufferColorRegion(buffer, (vec2i) { x11_window_attributes.width, x11_window_attributes.height }, SILK_PIXELBUFFER_WIDTH, 0xffffffff);
 
-        silkDrawRectPro(
+        silkDrawPolygon(
             buffer, 
             (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
             SILK_PIXELBUFFER_WIDTH, 
@@ -211,15 +211,9 @@ i32 main(i32 argc, const string argv[]) {
                 x11_window_attributes.width / 2,
                 x11_window_attributes.height / 2
             }, 
-            (vec2i) {
-                x11_window_attributes.height / 4,
-                x11_window_attributes.height / 4
-            }, 
+            x11_window_attributes.height / 8, 
             rectangle_rotation++, 
-            (vec2i) {
-                x11_window_attributes.height / 8,
-                x11_window_attributes.height / 8
-            }, 
+            5, 
             0xffff0000
         );
 

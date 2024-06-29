@@ -214,7 +214,7 @@ int main(int argc, const string argv[]) {
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColorRegion(buffer, sdl_window_size, SILK_PIXELBUFFER_WIDTH, 0xffffffff);
         
-        silkDrawRectPro(
+        silkDrawCircle(
             buffer, 
             (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
             SILK_PIXELBUFFER_WIDTH, 
@@ -222,15 +222,7 @@ int main(int argc, const string argv[]) {
                 sdl_window_size.x / 2,
                 sdl_window_size.y / 2
             }, 
-            (vec2i) {
-                sdl_window_size.y / 4,
-                sdl_window_size.y / 4
-            }, 
-            rectangle_rotation++, 
-            (vec2i) {
-                sdl_window_size.y / 8,
-                sdl_window_size.y / 8
-            }, 
+            sdl_window_size.y / 8, 
             0xff0000ff
         );
 

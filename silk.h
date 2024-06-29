@@ -43,6 +43,23 @@
 //
 // - SILK_DISABLE_LOG_ALL:
 //      Completely disables all logging (info, warn and err).
+//
+// - SILK_INCLUDE_MODULE_STB_IMAGE:
+//      Includes the functionality of 3rd-party module: stb_image.
+//      NOTE: After including the module you should also define the include path to module's header.
+//
+// - SILK_MODULE_STB_IMAGE_PATH:
+//      Path to the module's header: stb_image.h.
+//      NOTE: Path to the module header MUST be relative to silk.h header.
+//
+// - SILK_INCLUDE_MODULE_STB_IMAGE_WRITE:
+//      Includes the functionality of 3rd-party module: stb_image_write.
+//      NOTE: After including the module you should also define the include path to module's header.
+//
+// - SILK_MODULE_STB_IMAGE_WRITE_PATH:
+//      Path to the module's header: stb_image_write.h.
+//      NOTE: Path to the module header MUST be relative to silk.h header.
+//
 // --------------------------------------------------------------------------------------------------------------------------------
 // Licence: MIT
 // 
@@ -72,7 +89,17 @@
 // SECTION: Macro Definitions
 // --------------------------------------------------------------------------------------------------------------------------------
 
-#define SILK_API
+#if !defined(SILK_API)
+    #if defined(SILK_API_STATIC)
+        #define SILK_API static
+    #else
+        #if defined(__cplusplus)
+            #define SILK_API extern "C"     
+        #else
+            #define SILK_API extern
+        #endif // __cplusplus
+    #endif // SILK_API_STATIC / __cplusplus
+#endif // SILK_API
 
 #define SILK_VERSION "1.0"
 #define SILK_VERSION_MAJOR 1
@@ -129,14 +156,11 @@ typedef u32                                                                     
 
 typedef struct { i32 x; i32 y; }                                                        vec2i;
 typedef struct { color_channel r; color_channel g; color_channel b; color_channel a; }  color;
+typedef struct { pixel* data; vec2i size; i32 channels; }                               image;
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: API
 // --------------------------------------------------------------------------------------------------------------------------------
-
-#if defined(__cplusplus)
-extern "C" {            
-#endif
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Pixel buffer
@@ -185,9 +209,9 @@ SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buffer, vec2i buf_size, i32
 SILK_API i32 silkDrawPolygon(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
 SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
 
-SILK_API i32 silkDrawBuffer(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size);
-SILK_API i32 silkDrawBufferScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest);
-SILK_API i32 silkDrawBufferPro(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint);
+SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size);
+SILK_API i32 silkDrawImageScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size_dest);
+SILK_API i32 silkDrawImagePro(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i offset, vec2i size_dest, pixel tint);
 
 SILK_API i32 silkDrawTextDefault(pixel* buffer, vec2i buf_size, i32 buf_stride, const char* text, vec2i position, i32 font_size, i32 font_spacing, pixel pix);
 
@@ -216,11 +240,18 @@ SILK_API i32 silkVectorSwap(vec2i* a, vec2i* b);
 SILK_API i32 silkIntSwap(i32* a, i32* b);
 
 // --------------------------------------------------------------------------------------------------------------------------------
-// SECTION MODULE: IO
+// SECTION MODULE: Text
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API pixel* silkLoadPPM(const string path, vec2i* size);
-SILK_API i32 silkSavePPM(pixel* buffer, const string path);
+SILK_API string silkGetFilePathExtension(const string path);
+
+// --------------------------------------------------------------------------------------------------------------------------------
+// SECTION MODULE: Image Processing
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API image silkBufferToImage(pixel* buf, vec2i size);
+SILK_API image silkLoadImage(const string path);
+SILK_API i32 silkSaveImage(const string path, image* img);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Error-Logging
@@ -228,15 +259,11 @@ SILK_API i32 silkSavePPM(pixel* buffer, const string path);
 
 SILK_API string silkGetError();
 
-#if defined(__cplusplus)
-}    
-#endif
-
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Implementation
 // --------------------------------------------------------------------------------------------------------------------------------
 
-#ifdef SILK_IMPLEMENTATION
+#if defined(SILK_IMPLEMENTATION)
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Includes
@@ -258,6 +285,48 @@ SILK_API string silkGetError();
 #define SILK_DEFAULT_FONT_CHAR_HEIGHT 5
 
 // --------------------------------------------------------------------------------------------------------------------------------
+// SECTION MODULE: 3rd-Party Modules
+// --------------------------------------------------------------------------------------------------------------------------------
+
+// 3rd-Party Module template:
+// This is the template for 3rd-Party depencency modules inclosures.
+// Important information is that it only accounts for single-header libraries (i.e. STB, RGFW etc.)
+//
+// #if defined(SILK_INCLUDE_MODULE_{dependency})
+//     #if !defined(SILK_MODULE_{dependency}_PATH)
+//         #define SILK_MODULE_{dependency}_PATH "{dependency}.h"
+//     #endif // SILK_MODULE_{dependency}_PATH
+// 
+//     #define {dependency}_IMPLEMENTATION
+//     #include SILK_MODULE_{dependency}_PATH
+// 
+// #endif // SILK_INCLUDE_MODULE_{dependency}
+
+// Including module: stb_image.h
+// Purpose: image loading for formats: .png, .jpg, .bmp etc.
+#if defined(SILK_INCLUDE_MODULE_STB_IMAGE)
+    #if !defined(SILK_MODULE_STB_IMAGE_PATH)
+        #define SILK_MODULE_STB_IMAGE_PATH "stb_image.h"
+    #endif // SILK_MODULE_STB_IMAGE_PATH
+
+    #define STB_IMAGE_IMPLEMENTATION
+    #include SILK_MODULE_STB_IMAGE_PATH
+
+#endif // SILK_INCLUDE_MODULE_STB_IMAGE
+
+// Including module: stb_image_write.h
+// Purpose: image saving for formats: .png, .jpg, .bmp etc.
+#if defined(SILK_INCLUDE_MODULE_STB_IMAGE_WRITE)
+    #if !defined(SILK_MODULE_STB_IMAGE_WRITE_PATH)
+        #define SILK_MODULE_STB_IMAGE_WRITE_PATH "stb_image_write.h"
+    #endif // SILK_MODULE_STB_IMAGE_WRITE_PATH
+
+    #define STB_IMAGE_WRITE_IMPLEMENTATION
+    #include SILK_MODULE_STB_IMAGE_WRITE_PATH
+
+#endif // SILK_INCLUDE_MODULE_STB_IMAGE_WRITE
+
+// --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Error Messages
 // --------------------------------------------------------------------------------------------------------------------------------
 
@@ -267,6 +336,13 @@ SILK_API string silkGetError();
 #define SILK_ERR_BUF_IMG_INVALID "Passed the invalid image buffer."
 #define SILK_ERR_BUF_ACCES_OUT_OF_BOUNDS "Trying to access the out-of-bounds buffer address."
 #define SILK_ERR_FILE_OPEN_FAIL "Couldn't open the file."
+#define SILK_ERR_FILE_OPEN_FAIL_MSG(MSG) "Couldn't open the file: " MSG
+#define SILK_ERR_MODULE_NOT_INCLUDED "Couldn't load 3rd-party module."
+#define SILK_ERR_MODULE_NOT_INCLUDED_MSG(MSG) "Couldn't load 3rd-party module:" MSG
+#define SILK_ERR_IMAGE_LOAD_FAIL "Couldn't load an image."
+#define SILK_ERR_IMAGE_LOAD_FAIL_MSG(MSG) "Couldn't load an image: " MSG
+#define SILK_ERR_IMAGE_SAVE_FAIL "Couldn't save an image."
+#define SILK_ERR_IMAGE_INVALID_FILE_EXT "Invalid file extension provided."
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Charset
@@ -1813,55 +1889,53 @@ SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i p
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawBuffer(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size) {
+SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size) {
     if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
 
-    if(!img_buf) {
+    if(!img) {
         silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
         
         return SILK_FAILURE;
     }
 
-    silkDrawBufferPro(
+    silkDrawImagePro(
         buffer, 
-        buf_size,
-        buf_stride,
-        img_buf, 
+        buf_size, 
+        buf_stride, 
+        img, 
         position, 
-        (vec2i) { 0 },
-        size, 
-        size, 
+        (vec2i) { 0 }, 
+        img->size, 
         0xffffffff
     );
 
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawBufferScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i size_src, vec2i size_dest) {
+SILK_API i32 silkDrawImageScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size_dest) {
     if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
 
-    if(!img_buf) {
+    if(!img) {
         silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
         
         return SILK_FAILURE;
     }
 
-    silkDrawBufferPro(
+    silkDrawImagePro(
         buffer, 
-        buf_size,
-        buf_stride,
-        img_buf, 
-        position,
+        buf_size, 
+        buf_stride, 
+        img, 
+        position, 
         (vec2i) { 0 }, 
-        size_src, 
         size_dest, 
         0xffffffff
     );
@@ -1869,14 +1943,14 @@ SILK_API i32 silkDrawBufferScaled(pixel* buffer, vec2i buf_size, i32 buf_stride,
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawBufferPro(pixel* buffer, vec2i buf_size, i32 buf_stride, pixel* img_buf, vec2i position, vec2i offset, vec2i size_src, vec2i size_dest, pixel tint) {
+SILK_API i32 silkDrawImagePro(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i offset, vec2i size_dest, pixel tint) {
     if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
         return SILK_FAILURE;
     }
 
-    if(!img_buf) {
+    if(!img) {
         silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
         
         return SILK_FAILURE;
@@ -1885,8 +1959,8 @@ SILK_API i32 silkDrawBufferPro(pixel* buffer, vec2i buf_size, i32 buf_stride, pi
     for(i32 y = 0; y < size_dest.y; y++) {
         for(i32 x = 0; x < size_dest.x; x++) {
             vec2i new_position = {
-                x * size_src.x / size_dest.x,
-                y * size_src.y / size_dest.y
+                x * img->size.x / size_dest.x,
+                y * img->size.y / size_dest.y
             };
 
             silkDrawPixel(
@@ -1896,9 +1970,9 @@ SILK_API i32 silkDrawBufferPro(pixel* buffer, vec2i buf_size, i32 buf_stride, pi
                 (vec2i) { (position.x - offset.x) + x, (position.y - offset.y) + y },
                 silkPixelTint(
                     silkGetPixel(
-                        img_buf, 
+                        img->data, 
                         new_position, 
-                        size_src.x
+                        img->size.x
                     ),
                     tint
                 )
@@ -2099,96 +2173,193 @@ SILK_API i32 silkIntSwap(i32* a, i32* b) {
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------
-// SECTION MODULE: IO
+// SECTION MODULE: Text
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API pixel* silkLoadPPM(const string path, vec2i* size) {
-    // You can learn more about PPM format here:
-    // https://netpbm.sourceforge.net/doc/ppm.html
-
-    FILE* file = fopen(path, "rb");
-    if(!file) {
-        silkAssignErrorMessage(SILK_ERR_FILE_OPEN_FAIL);
+SILK_API string silkGetFilePathExtension(const string path) {
+    if(path == NULL) {
         return NULL;
     }
 
-    pixel* result = (pixel*)calloc(size->x * size->y, sizeof(pixel));
+    const string extension = strrchr(path, '.');
 
-    // TODO(yakub):
-    // Implement the way of reading the PPM file
-    // The things we need to focus on are:
-    // - (Mandatory) Image's width and height;
-    // - (Mandatory) Image's color information;
-    // - (Optional, nice to have) We need to get the information about the maximum color channel value, then get it to our 255 maximum value;
+    if(!extension || extension == path) {
+        return NULL;
+    } 
 
-    fclose(file);
+    return extension;
+}
 
-    silkLogInfo("Image path: %s", path);
-    silkLogInfo("Image resolution: x.%i, y.%i", size->x, size->y);
-    silkLogInfo("Image memory size: %i", size->x * size->y * sizeof(pixel));
+// --------------------------------------------------------------------------------------------------------------------------------
+// SECTION MODULE: Image Processing
+// --------------------------------------------------------------------------------------------------------------------------------
+
+SILK_API image silkBufferToImage(pixel* buf, vec2i size) {
+    if(buf == NULL) {
+        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
+        
+        return (image) { 0 };
+    }
+
+    image result = {
+        .data = (pixel*) malloc(size.x * size.y * sizeof(pixel)),
+        .size = size,
+        .channels = 4
+    };
+
+    for(i32 i = 0; i < size.x * size.y; i++) {
+        result.data[i] = buf[i];
+    }
 
     return result;
 }
 
-SILK_API i32 silkSavePPM(pixel* image_buf, const string path) {
-    // You can learn more about PPM format here:
-    // https://netpbm.sourceforge.net/doc/ppm.html
+SILK_API image silkLoadImage(const string path) {
+    image result = { 0 };
 
-    if(!image_buf) {
+#if !defined(SILK_INCLUDE_MODULE_STB_IMAGE) 
+
+    silkAssignErrorMessage(SILK_ERR_MODULE_NOT_INCLUDED);
+
+#elif defined(SILK_INCLUDE_MODULE_STB_IMAGE)
+
+    result.data = (pixel*) stbi_load(
+        path, 
+        &result.size.x, 
+        &result.size.y, 
+        NULL, 
+        STBI_rgb_alpha
+    );
+
+    if(!result.data) {
+        silkLogErr("Image loading failure: %s", stbi_failure_reason());
+        return (image) { 0 };
+    }
+
+    silkLogInfo("Image path: %s", path);
+    silkLogInfo("Image resolution: x.%i, y.%i", result.size.x, result.size.y);
+    silkLogInfo("Image memory size: %i", result.size.x * result.size.y * sizeof(pixel));
+
+#endif // SILK_INCLUDE_MODULE_STB_IMAGE
+
+    return result;
+}
+
+SILK_API i32 silkSaveImage(const string path, image* img) {
+    if(img == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
         
         return SILK_FAILURE;
     }
 
-    FILE* file = fopen(path, "w");
-    if(!file) {
-        silkAssignErrorMessage(SILK_ERR_FILE_OPEN_FAIL);
-        return SILK_FAILURE;
-    }
+#if !defined(SILK_INCLUDE_MODULE_STB_IMAGE_WRITE) 
 
-    fprintf(
-        file, 
-        "%s\n"      // PPM Magic Number
-        "%i %i\n"   // PPM image's width and height
-        "%u\n",     // PPM max color information (maximum color value can be 225)
-        (string) "P6",
-        (i32) SILK_PIXELBUFFER_WIDTH, 
-        (i32) SILK_PIXELBUFFER_HEIGHT,
-        (u8) 255
-    );
+    silkAssignErrorMessage(SILK_ERR_MODULE_NOT_INCLUDED);
 
-    if(ferror(file)) {
-        fclose(file);
-        return SILK_FAILURE;
-    }
+    return SILK_FAILURE;
 
-    for(int i = 0; i < SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT; i++) {
-        u8 channels[3] = {
-            silkPixelToColor(image_buf[i]).r,
-            silkPixelToColor(image_buf[i]).g,
-            silkPixelToColor(image_buf[i]).b
-        };
-        
-        fwrite(
-            channels, 
-            sizeof(channels), 
-            1, 
-            file  
+#elif defined(SILK_INCLUDE_MODULE_STB_IMAGE_WRITE)
+
+    i32 result = 0;
+
+    if(strcmp(silkGetFilePathExtension(path), ".png") == 0) {
+        result = stbi_write_png(
+            path, 
+            img->size.x, 
+            img->size.y, 
+            img->channels, 
+            img->data, 
+            img->size.x * sizeof(pixel)
+        );
+    } else if(strcmp(silkGetFilePathExtension(path), ".jpg") == 0) {
+        result = stbi_write_jpg(
+            path, 
+            img->size.x, 
+            img->size.y, 
+            img->channels, 
+            img->data, 
+            100
+        );
+    } else if(strcmp(silkGetFilePathExtension(path), ".bmp") == 0) {
+        result = stbi_write_bmp(
+            path, 
+            img->size.x, 
+            img->size.y, 
+            img->channels, 
+            img->data
+        );
+    } else if(strcmp(silkGetFilePathExtension(path), ".tga") == 0) {
+        result = stbi_write_tga(
+            path, 
+            img->size.x, 
+            img->size.y, 
+            img->channels, 
+            img->data
+        );
+    } else if(strcmp(silkGetFilePathExtension(path), ".ppm") == 0) {
+        FILE* file = fopen(path, "w");
+        if(!file) {
+            silkAssignErrorMessage(SILK_ERR_FILE_OPEN_FAIL);
+            return SILK_FAILURE;
+        }
+
+        fprintf(
+            file, 
+            "%s\n"      // PPM Magic Number
+            "%i %i\n"   // PPM image's width and height
+            "%u\n",     // PPM max color information (maximum color value can be 225)
+            (string) "P6",
+            img->size.x, 
+            img->size.y,
+            (u8) 255
         );
 
         if(ferror(file)) {
             fclose(file);
             return SILK_FAILURE;
         }
+
+        for(int i = 0; i < img->size.x * img->size.y; i++) {
+            u8 channels[3] = {
+                silkPixelToColor(img->data[i]).r,
+                silkPixelToColor(img->data[i]).g,
+                silkPixelToColor(img->data[i]).b
+            };
+            
+            fwrite(
+                channels, 
+                sizeof(channels), 
+                1, 
+                file  
+            );
+
+            if(ferror(file)) {
+                fclose(file);
+                return SILK_FAILURE;
+            }
+        }
+
+        fclose(file);
+
+        result = 1;
+    }  else {
+        result = 0;
     }
 
-    fclose(file);
+    if(result == 0) {
+        silkAssignErrorMessage(SILK_ERR_IMAGE_INVALID_FILE_EXT);
+        return SILK_FAILURE;
+    }
+
+    silkLogInfo("Image successfully saved to: %s", path);
+
+#endif // SILK_INCLUDE_MODULE_STB_IMAGE
 
     return SILK_SUCCESS;
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------
-// SECTION MODULE: IO
+// SECTION MODULE: Error-Logging
 // --------------------------------------------------------------------------------------------------------------------------------
 
 SILK_API string silkGetError() {

@@ -4,68 +4,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #define SILK_PIXELBUFFER_WIDTH 800
 #define SILK_PIXELBUFFER_HEIGHT 600
+
+#define SILK_INCLUDE_MODULE_STB_IMAGE
+#define SILK_MODULE_STB_IMAGE_PATH "./examples/example_stbi/stb_image.h"
+
+#define SILK_INCLUDE_MODULE_STB_IMAGE_WRITE
+#define SILK_MODULE_STB_IMAGE_WRITE_PATH "./examples/example_stbi/stb_image_write.h"
 
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
-pixel* StbiLoadImage(const string path, vec2i* size) {
-    pixel* result = (pixel*) stbi_load(
-        path, 
-        &size->x, 
-        &size->y, 
-        NULL, 
-        STBI_rgb_alpha
-    );
-
-    if(!result) {
-        silkLogErr("Image loading failure: %s", stbi_failure_reason());
-        return result;
-    }
-
-    silkLogInfo("Image path: %s", path);
-    silkLogInfo("Image resolution: x.%i, y.%i", size->x, size->y);
-    silkLogInfo("Image memory size: %i", size->x * size->y * sizeof(pixel));
-
-    return result;
-}
-
-i32 StbiRenderImage(pixel* buf, pixel* image, vec2i position, vec2i size, i32 scale) {
-    if(!buf) {
-        silkLogErr("Passed the invalid pixel buffer.");
-        
-        return SILK_FAILURE;
-    }
-
-    if(!image) {
-        silkLogErr("Passed the invalid image buffer.");
-        
-        return SILK_FAILURE;
-    }
-
-    silkDrawBufferPro(
-        buf,                                                        // Main pixel-buffer
-        SILK_PIXELBUFFER_WIDTH,                                     // Stride of the pixel-buffer
-        image,                                                      // Image buffer
-        position,                                                   // Image position
-        (vec2i) { size.x / 2, size.y / 2 },                         // Image position offset        
-        size,                                                       // Image size (source)
-        (vec2i) { size.x * scale, size.y * scale },                 // Image size (destination)
-        0xffffffff                                                  // Image tint
-    );
-
-    return SILK_SUCCESS;
-}
-
 int main(int argc, const string argv[]) {
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT] = { 0 };
 
-    vec2i size = { 0 };
-    pixel* image = StbiLoadImage("turtle.png", &size);
+    image img = silkLoadImage("turtle.png");
 
     const string text = "Hello, Stb_Image!";
     const i32 text_size = 4;
@@ -73,24 +27,14 @@ int main(int argc, const string argv[]) {
 
     silkClearPixelBufferColor(buffer, 0xffffffff);
 
-    silkDrawBufferPro(
+    silkDrawImagePro(
         buffer, 
-        (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
+        (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, 
         SILK_PIXELBUFFER_WIDTH, 
-        image, 
-        (vec2i) {
-            SILK_PIXELBUFFER_CENTER_X,
-            SILK_PIXELBUFFER_CENTER_Y
-        }, 
-        (vec2i) {
-            size.x / 4,
-            size.y / 4
-        }, 
-        size,
-        (vec2i) {
-            size.x / 2,
-            size.y / 2
-        },
+        &img, 
+        (vec2i) { SILK_PIXELBUFFER_CENTER_X, SILK_PIXELBUFFER_CENTER_Y }, 
+        (vec2i) { img.size.x / 4, img.size.y / 4 }, 
+        (vec2i) { img.size.x / 2, img.size.y / 2 }, 
         0xffffffff
     );
 
@@ -108,8 +52,15 @@ int main(int argc, const string argv[]) {
         0xff000000
     );
 
-    silkSavePPM(buffer, "output.ppm");
-    silkUnloadBuffer(image);
+    image buffer_to_image = silkBufferToImage(buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT });
+
+    silkSaveImage("output.png", &buffer_to_image);
+    silkSaveImage("output.jpg", &buffer_to_image);
+    silkSaveImage("output.bmp", &buffer_to_image);
+    silkSaveImage("output.ppm", &buffer_to_image);
+    
+    silkUnloadBuffer(img.data);
+    silkUnloadBuffer(buffer_to_image.data);
     
     return 0;
 }
