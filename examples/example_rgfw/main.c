@@ -42,6 +42,8 @@ int main(int argc, const string argv[]) {
     size_t angle = 0;
     u32 angleDir = 1;
 
+    image img = silkBufferToImage((pixel*)icon, (vec2i) { 3, 3 });
+
     vec2i circlePoint = {100, 100};
 
     while(!exit) { 
@@ -112,7 +114,7 @@ int main(int argc, const string argv[]) {
         }
 
         if (star == 3)
-            silkDrawBuffer((pixel*)window->buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, SILK_PIXELBUFFER_WIDTH, (pixel*)icon, (vec2i){v.x, v.y}, (vec2i) {3, 3});
+            silkDrawImage((pixel*)window->buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT }, SILK_PIXELBUFFER_WIDTH, &img, (vec2i){v.x, v.y});
 
         if (RGFW_isPressedI(window, RGFW_Up))
             circlePoint.y--;

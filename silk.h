@@ -209,7 +209,7 @@ SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buffer, vec2i buf_size, i32
 SILK_API i32 silkDrawPolygon(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
 SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix);
 
-SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size);
+SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position);
 SILK_API i32 silkDrawImageScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size_dest);
 SILK_API i32 silkDrawImagePro(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i offset, vec2i size_dest, pixel tint);
 
@@ -1889,7 +1889,7 @@ SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i p
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size) {
+SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position) {
     if(buffer == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
         
