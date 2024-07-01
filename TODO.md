@@ -9,7 +9,7 @@
 - [X] **Raylib example**;
 - [X] **stb_image.h example**;
 - [X] **RGFW & RSGL example**;
-- [ ] **Win32 example;**
+- [X] **Win32 example;**
 
 ## 3. Repository:
 - [X] **Finish [README.md](./README.md)**;
