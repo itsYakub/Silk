@@ -948,7 +948,7 @@ static u8 silk_charset[128][SILK_DEFAULT_FONT_CHAR_HEIGHT][SILK_DEFAULT_FONT_CHA
         {0,0,0},
         {1,1,1},
         {0,0,0},
-        {1,1,1}, conflicts
+        {1,1,1},
         {0,0,0},
     },
 
