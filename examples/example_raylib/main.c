@@ -5,13 +5,13 @@
 // $ cmake --build .
 
 #include "./bin/_deps/raylib-build/raylib/include/raylib.h"
-#include "./bin/_deps/raylib-build/raylib/include/raymath.h"
 
+#define SILK_ALPHABLEND_ENABLE
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
 i32 RaylibSetup(Texture* texture) {
-    SetConfigFlags(FLAG_VSYNC_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(
         800, 
         600, 
@@ -30,18 +30,10 @@ i32 RaylibSetup(Texture* texture) {
         BLANK
     );
 
+    ImageFormat(&raylib_image, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+
     *texture = LoadTextureFromImage(raylib_image);
     UnloadImage(raylib_image);
-
-#if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
-
-    SetTextureFilter(*texture, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-
-#elif defined (SILK_BYTEORDER_BIG_ENDIAN)
-
-    SetTextureFilter(*texture, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-
-#endif
 
     if(!IsTextureReady(*texture)) {
         silkLogErr("Raylib: Couldn't create a Texture");
@@ -108,7 +100,7 @@ int main(int argc, const string argv[]) {
     while(!WindowShouldClose()) {
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColorRegion(buffer, (vec2i) { GetScreenWidth(), GetScreenHeight() }, SILK_PIXELBUFFER_WIDTH, 0xffffffff);
-
+        
         silkDrawRectPro(
             buffer, 
             (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
@@ -142,7 +134,6 @@ int main(int argc, const string argv[]) {
             text_spacing,
             0xff000000
         );
-
 
         // Displaying the graphics on the window
         RaylibBlit(

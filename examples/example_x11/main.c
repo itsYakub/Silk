@@ -1,5 +1,5 @@
 // Compilation command:
-// cc main.c -o example.out -lX11
+// cc main.c -o example.out -lX11 -lm
 
 #include <X11/X.h>
 #include <X11/Xatom.h>
@@ -94,14 +94,6 @@ i32 X11Setup(pixel* buf, Display** display, Window* root, Window* window, XWindo
     silkLogInfo("X11: New window protocol: WM_DELETE_WINDOW.");
 
     XMapWindow(*display, *window);
-
-    XSizeHints* size_hint = XAllocSizeHints();
-    size_hint->flags = (1L << 4) | (1L << 5);
-    size_hint->min_width = size_hint->max_width = 800;
-    size_hint->min_height = size_hint->max_height = 600;
-
-    XSetWMSizeHints(*display, *window, size_hint, XA_WM_NORMAL_HINTS);
-    XFree(size_hint);
 
     return SILK_SUCCESS;
 }

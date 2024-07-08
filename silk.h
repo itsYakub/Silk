@@ -138,11 +138,25 @@
     #include <stdlib.h>
 
     #define SILK_MALLOC malloc
-    #define SILK_CALLOC calloc
-    #define SILK_REALLOC realloc
-    #define SILK_FREE free
+#endif // SILK_MALLOC
 
-#endif // SILK_MALLOC, SILK_CALLOC, SILK_REALLOC, SILK_FREE
+#if !defined(SILK_CALLOC)
+    #include <stdlib.h>
+
+    #define SILK_CALLOC calloc
+#endif // SILK_CALLOC
+
+#if !defined(SILK_REALLOC)
+    #include <stdlib.h>
+
+    #define SILK_REALLOC realloc
+#endif // SILK_REALLOC
+
+#if !defined(SILK_FREE)
+    #include <stdlib.h>
+
+    #define SILK_FREE free
+#endif // SILK_FREE
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Typedefs
@@ -206,6 +220,10 @@ SILK_API pixel silkColorToPixel(color col);
 SILK_API pixel silkAlphaBlend(pixel base_pixel, pixel return_pixel, color_channel value);
 SILK_API pixel silkPixelFade(pixel pix, f32 factor);
 SILK_API pixel silkPixelTint(pixel pix, pixel tint);
+SILK_API color_channel silkPixelChannelRed(pixel pix);
+SILK_API color_channel silkPixelChannelGreen(pixel pix);
+SILK_API color_channel silkPixelChannelBlue(pixel pix);
+SILK_API color_channel silkPixelChannelAlpha(pixel pix);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Rendering
@@ -270,6 +288,9 @@ SILK_API string silkGetFilePathExtension(const string path);
 // SECTION MODULE: Image Processing
 // --------------------------------------------------------------------------------------------------------------------------------
 
+SILK_API image silkGenImageColor(vec2i size, pixel pix);
+SILK_API image silkGenImageCheckerboard(vec2i size, i32 checker_size, pixel a, pixel b);
+SILK_API image silkScaleImage(image* source, vec2i dest_size);
 SILK_API image silkBufferToImage(pixel* buf, vec2i size);
 SILK_API image silkLoadImage(const string path);
 SILK_API i32 silkSaveImage(const string path, image* img);
@@ -355,7 +376,7 @@ SILK_API string silkGetError();
 #define SILK_ERR_UNDEFINE_BEHAVIOUR "Undefined behaviour."
 #define SILK_ERR_BUF_INVALID "Passed the invalid pixel buffer."
 #define SILK_ERR_BUF_IMG_INVALID "Passed the invalid image buffer."
-#define SILK_ERR_BUF_ACCES_OUT_OF_BOUNDS "Trying to access the out-of-bounds buffer address."
+#define SILK_ERR_BUF_ACCESS_OUT_OF_BOUNDS "Trying to access the out-of-bounds buffer address."
 #define SILK_ERR_FILE_OPEN_FAIL "Couldn't open the file."
 #define SILK_ERR_FILE_OPEN_FAIL_MSG(MSG) "Couldn't open the file: " MSG
 #define SILK_ERR_MODULE_NOT_INCLUDED "Couldn't load 3rd-party module."
@@ -364,6 +385,7 @@ SILK_API string silkGetError();
 #define SILK_ERR_IMAGE_LOAD_FAIL_MSG(MSG) "Couldn't load an image: " MSG
 #define SILK_ERR_IMAGE_SAVE_FAIL "Couldn't save an image."
 #define SILK_ERR_IMAGE_INVALID_FILE_EXT "Invalid file extension provided."
+#define SILK_ERR_ALLOCATION_FAIL "Memory allocation failure."
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Charset
@@ -926,7 +948,7 @@ static u8 silk_charset[128][SILK_DEFAULT_FONT_CHAR_HEIGHT][SILK_DEFAULT_FONT_CHA
         {0,0,0},
         {1,1,1},
         {0,0,0},
-        {1,1,1},
+        {1,1,1}, conflicts
         {0,0,0},
     },
 
@@ -1212,22 +1234,10 @@ SILK_API i32 silkClearPixelBufferColorRegion(pixel* buffer, vec2i region, i32 st
 }
 
 SILK_API pixel silkGetPixel(pixel* buffer, vec2i position, i32 stride) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return 0xffffffff;
-    }
-
     return buffer[position.y * stride + position.x];
 }
 
 SILK_API i32 silkSetPixel(pixel* buffer, vec2i position, i32 stride, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     buffer[position.y * stride + position.x] = pix;
 
     return SILK_SUCCESS;
@@ -1240,7 +1250,7 @@ SILK_API i32 silkUnloadBuffer(pixel* buffer) {
         return SILK_FAILURE;
     }
 
-    free(buffer);
+    SILK_FREE(buffer);
 
     return SILK_SUCCESS;
 }
@@ -1300,10 +1310,10 @@ SILK_API pixel silkAlphaBlend(pixel base_pixel, pixel return_pixel, color_channe
     color base_color = silkPixelToColor(base_pixel);
     color return_color = silkPixelToColor(return_pixel);
 
-#if defined(SILK_ALPHABLEND_ENABLE)
-
     if(return_color.a == 0) {
         return base_pixel;
+    } else if(return_pixel == base_pixel) {
+        return return_pixel;
     }
 
     result.r = base_color.r + (return_color.r - base_color.r) * (value / 255.0f);
@@ -1311,15 +1321,6 @@ SILK_API pixel silkAlphaBlend(pixel base_pixel, pixel return_pixel, color_channe
     result.b = base_color.b + (return_color.b - base_color.b) * (value / 255.0f);
     result.a = value;
 
-#elif defined(SILK_ALPHABLEND_DISABLE)
-
-    if(return_color.a == 0) {
-        return base_pixel;
-    } else {
-        return return_pixel;
-    }
-
-#endif
 
     return silkColorToPixel(result);
 }
@@ -1346,6 +1347,62 @@ SILK_API pixel silkPixelTint(pixel pix, pixel tint) {
     return silkColorToPixel(result);
 }
 
+SILK_API color_channel silkPixelChannelRed(pixel pix) {
+    
+#if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
+
+    return (0x000000ff & pix) >> (8 * 0);
+
+#elif defined(SILK_BYTEORDER_BIG_ENDIAN)
+
+    return (0x000000ff & pix) >> (8 * 3);
+
+#endif
+
+}
+
+SILK_API color_channel silkPixelChannelGreen(pixel pix) {
+
+#if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
+
+    return (0x0000ff00 & pix) >> (8 * 0);
+
+#elif defined(SILK_BYTEORDER_BIG_ENDIAN)
+
+    return (0x0000ff00 & pix) >> (8 * 3);
+
+#endif
+
+}
+
+SILK_API color_channel silkPixelChannelBlue(pixel pix) {
+
+#if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
+
+    return (0x00ff0000 & pix) >> (8 * 0);
+
+#elif defined(SILK_BYTEORDER_BIG_ENDIAN)
+
+    return (0x00ff0000 & pix) >> (8 * 3);
+
+#endif
+
+}
+
+SILK_API color_channel silkPixelChannelAlpha(pixel pix) {
+
+#if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
+
+    return (0xff000000 & pix) >> (8 * 0);
+
+#elif defined(SILK_BYTEORDER_BIG_ENDIAN)
+
+    return (0xff000000 & pix) >> (8 * 3);
+
+#endif
+
+}
+
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Rendering
 // --------------------------------------------------------------------------------------------------------------------------------
@@ -1359,7 +1416,7 @@ SILK_API i32 silkDrawPixel(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i 
 
     if( (position.x < 0 || position.x >= buf_size.x) ||
         (position.y < 0 || position.y >= buf_size.y)) {
-        silkAssignErrorMessage(SILK_ERR_BUF_ACCES_OUT_OF_BOUNDS);
+        silkAssignErrorMessage(SILK_ERR_BUF_ACCESS_OUT_OF_BOUNDS);
 
         return SILK_FAILURE;
     }
@@ -1368,20 +1425,17 @@ SILK_API i32 silkDrawPixel(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i 
     // as there won't be any change in this specific position.
     if(silkGetPixel(buffer, position, buf_stride) == pix) {
         return SILK_SUCCESS;
+    } 
 
-    }
+#if defined(SILK_ALPHABLEND_ENABLE)
 
-#if !defined(SILK_ALPHA_IGNORE)
+    pix = silkAlphaBlend(
+        silkGetPixel(buffer, position, buf_stride), 
+        pix, 
+        silkPixelToColor(pix).a
+    );
 
-    else {
-        pix = silkAlphaBlend(
-            silkGetPixel(buffer, position, buf_stride),
-            pix,
-            silkPixelToColor(pix).a
-        );
-    }
-
-#endif
+#endif // SILK_ALPHABLEND_ENABLE
 
     silkSetPixel(
         buffer,
@@ -2021,13 +2075,17 @@ SILK_API i32 silkDrawTextDefault(pixel* buffer, vec2i buf_size, i32 buf_stride, 
 
         for(i32 y = 0; y < SILK_DEFAULT_FONT_CHAR_HEIGHT; y++) {
             for(i32 x = 0; x < SILK_DEFAULT_FONT_CHAR_WIDTH; x++) {
+                if(silk_charset[current_char][y][x] == 0) {
+                    continue;
+                }
+
                 silkDrawRect(
                     buffer,
                     buf_size,
-                    buf_stride,
-                    (vec2i) { (glyph_position.x + x) * font_size, (glyph_position.y + y) * font_size },
-                    (vec2i) { font_size, font_size },
-                    pix * silk_charset[current_char][y][x]
+                    buf_stride, 
+                    (vec2i) { (glyph_position.x + x) * font_size, (glyph_position.y + y) * font_size }, 
+                    (vec2i) { font_size, font_size }, 
+                    pix
                 );
             }
         }
@@ -2215,6 +2273,87 @@ SILK_API string silkGetFilePathExtension(const string path) {
 // SECTION MODULE: Image Processing
 // --------------------------------------------------------------------------------------------------------------------------------
 
+SILK_API image silkGenImageColor(vec2i size, pixel pix) {
+    image result = { 
+        .data = (pixel*) SILK_MALLOC(size.x * size.y * sizeof(pixel)),
+        .size = size
+    };
+    
+    for(i32 i = 0; i < size.x * size.y; i++) {
+        result.data[i] = pix;
+    }
+
+    return result;
+}
+
+SILK_API image silkGenImageCheckerboard(vec2i size, i32 checker_size, pixel a, pixel b) {
+    image result = { 
+        .data = (pixel*) SILK_MALLOC(size.x * size.y * sizeof(pixel)),
+        .size = size
+    };
+
+    if(result.data == NULL) {
+        silkAssignErrorMessage(SILK_ERR_ALLOCATION_FAIL);
+        return (image) { 0 };
+    }
+
+    for(i32 y = 0; y < size.y; y += checker_size) {
+        for(i32 x = 0; x < size.x; x+= checker_size) {
+            pixel color = 0;
+
+            if((y / checker_size) % 2 == 0) {
+                color = ((y / checker_size) * size.y + (x / checker_size)) % 2 == 0 ? a : b;
+            } else {
+                color = ((y / checker_size) * size.y + (x / checker_size)) % 2 == 1 ? a : b;
+            }
+
+            silkDrawRect(
+                result.data, 
+                size, 
+                size.x, 
+                (vec2i) { x, y }, 
+                (vec2i) { checker_size, checker_size }, 
+                color
+            );
+        }
+    }
+
+    return result;
+}
+
+SILK_API image silkScaleImage(image* source, vec2i dest_size) {
+    image result = { 0 };
+    result.size = dest_size;
+
+    result.data = (pixel*) SILK_MALLOC(dest_size.x * dest_size.y * sizeof(pixel));
+    if(result.data == NULL) {
+        silkAssignErrorMessage(SILK_ERR_ALLOCATION_FAIL);
+        return (image) { 0 };
+    }
+
+    for(i32 y = 0; y < dest_size.y; y++) {
+        for(i32 x = 0; x < dest_size.x; x++) {
+            vec2i new_position = {
+                x * source->size.x / dest_size.x,
+                y * source->size.y / dest_size.y
+            };
+
+            silkSetPixel(
+                result.data, 
+                (vec2i) { x, y }, 
+                dest_size.x, 
+                silkGetPixel(
+                    source->data, 
+                    new_position, 
+                    source->size.x
+                )
+            );
+        }
+    }
+
+    return result;
+}
+
 SILK_API image silkBufferToImage(pixel* buf, vec2i size) {
     if(buf == NULL) {
         silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
@@ -2223,10 +2362,16 @@ SILK_API image silkBufferToImage(pixel* buf, vec2i size) {
     }
 
     image result = {
-        .data = (pixel*) malloc(size.x * size.y * sizeof(pixel)),
+        .data = (pixel*) SILK_MALLOC(size.x * size.y * sizeof(pixel)),
         .size = size,
         .channels = 4
     };
+
+    if(result.data == NULL) {
+        silkAssignErrorMessage(SILK_ERR_ALLOCATION_FAIL);
+        return (image) { 0 };
+    }
+
 
     for(i32 i = 0; i < size.x * size.y; i++) {
         result.data[i] = buf[i];

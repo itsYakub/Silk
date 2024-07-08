@@ -11,3 +11,8 @@
 $ cc main.c -o example -municode -lgdi32
 $ ./example.exe
 ```
+- Compilation command (on linux):
+```console
+$ x86_64-w64-mingw32-gcc main.c -o example -municode -lgdi32
+$ wine example.exe
+```

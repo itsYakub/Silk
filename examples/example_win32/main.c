@@ -1,11 +1,14 @@
 // Compilation command (on Windows)
 // cc main.c -o example -municode -lgdi32
 
+// Compilation command (on linux)
+// x86_64-w64-mingw32-gcc main.c -o example -municode -lgdi32
+
 #if !defined (UNICODE)
     #define UNICODE
 #endif // UNICODE
 
-#include <Windows.h>
+#include <windows.h>
 #include <wingdi.h>
 #include <windef.h>
 #include <winuser.h>

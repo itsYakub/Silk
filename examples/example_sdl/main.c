@@ -14,6 +14,7 @@
 #include "bin/_deps/sdl2-src/include/SDL_timer.h"
 #include "bin/_deps/sdl2-src/include/SDL_video.h"
 
+#define SILK_ALPHABLEND_DISABLE
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
