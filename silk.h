@@ -111,6 +111,8 @@
 #define SILK_SUCCESS 0 // SILK_SUCCESS: returned if the function was executed successfully
 #define SILK_FAILURE 1 // SILK_FAILURE: returned if there was a problem during the function execution
 
+#define SILK_UNUSED(x) (void)(x);
+
 #if !defined (SILK_ALPHABLEND_DISABLE) && !defined(SILK_ALPHA_IGNORE)
     #define SILK_ALPHABLEND_ENABLE
 #endif // SILK_ALPHABLEND_ENABLE
@@ -268,8 +270,8 @@ SILK_API i32 silkLogInfo(const string text, ...);
 SILK_API i32 silkLogWarn(const string text, ...);
 SILK_API i32 silkLogErr(const string text, ...);
 
-SILK_API i32 silkLogAlphaBlendStatus();
-SILK_API i32 silkLogByteOrderStatus();
+SILK_API i32 silkLogAlphaBlendStatus(void);
+SILK_API i32 silkLogByteOrderStatus(void);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION MODULE: Math
@@ -299,7 +301,7 @@ SILK_API i32 silkSaveImage(const string path, image* img);
 // SECTION MODULE: Error-Logging
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API string silkGetError();
+SILK_API string silkGetError(void);
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Implementation
@@ -1464,7 +1466,7 @@ SILK_API i32 silkDrawLine(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i s
     f32 dx = end.x - start.x;
     f32 dy = end.y - start.y;
 
-    f32 steps = abs(dx) >= abs(dy) ? abs(dx) : abs(dy);
+    f32 steps = fabs(dx) >= fabs(dy) ? fabs(dx) : fabs(dy);
 
     dx /= steps;
     dy /= steps;
@@ -2075,7 +2077,7 @@ SILK_API i32 silkDrawTextDefault(pixel* buffer, vec2i buf_size, i32 buf_stride, 
 
         for(i32 y = 0; y < SILK_DEFAULT_FONT_CHAR_HEIGHT; y++) {
             for(i32 x = 0; x < SILK_DEFAULT_FONT_CHAR_WIDTH; x++) {
-                if(silk_charset[current_char][y][x] == 0) {
+                if(silk_charset[(size_t)current_char][y][x] == 0) {
                     continue;
                 }
 
@@ -2192,7 +2194,7 @@ SILK_API i32 silkLogErr(const string text, ...) {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkLogAlphaBlendStatus() {
+SILK_API i32 silkLogAlphaBlendStatus(void) {
 #if defined(SILK_ALPHABLEND_ENABLE)
 
     silkLogInfo("Alpha-Blending: ENABLED");
@@ -2211,7 +2213,7 @@ SILK_API i32 silkLogAlphaBlendStatus() {
     return SILK_SUCCESS;
 }
 
-SILK_API i32 silkLogByteOrderStatus() {
+SILK_API i32 silkLogByteOrderStatus(void) {
 #if defined(SILK_BYTEORDER_LITTLE_ENDIAN)
 
     silkLogInfo("Byte order: LITTLE ENDIAN");
@@ -2386,6 +2388,7 @@ SILK_API image silkLoadImage(const string path) {
 #if !defined(SILK_INCLUDE_MODULE_STB_IMAGE)
 
     silkAssignErrorMessage(SILK_ERR_MODULE_NOT_INCLUDED);
+    SILK_UNUSED(path);
 
 #elif defined(SILK_INCLUDE_MODULE_STB_IMAGE)
 
@@ -2405,7 +2408,6 @@ SILK_API image silkLoadImage(const string path) {
     silkLogInfo("Image path: %s", path);
     silkLogInfo("Image resolution: x.%i, y.%i", result.size.x, result.size.y);
     silkLogInfo("Image memory size: %i", result.size.x * result.size.y * sizeof(pixel));
-
 #endif // SILK_INCLUDE_MODULE_STB_IMAGE
 
     return result;
@@ -2421,6 +2423,7 @@ SILK_API i32 silkSaveImage(const string path, image* img) {
 #if !defined(SILK_INCLUDE_MODULE_STB_IMAGE_WRITE)
 
     silkAssignErrorMessage(SILK_ERR_MODULE_NOT_INCLUDED);
+    SILK_UNUSED(path)
 
     return SILK_FAILURE;
 
@@ -2528,7 +2531,7 @@ SILK_API i32 silkSaveImage(const string path, image* img) {
 // SECTION MODULE: Error-Logging
 // --------------------------------------------------------------------------------------------------------------------------------
 
-SILK_API string silkGetError() {
+SILK_API string silkGetError(void) {
     return silk_error_msg;
 }
 
