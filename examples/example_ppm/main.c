@@ -54,7 +54,9 @@ int main(int argc, const string argv[]) {
         0xff000000
     );
     
-    silkSavePPM(buffer, "output.ppm");
+    image canvas_image = silkBufferToImage(buffer, (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT });
+    silkSaveImage("output.ppm", &canvas_image);
+    silkUnloadBuffer(canvas_image.data);
 
     return 0;
 }

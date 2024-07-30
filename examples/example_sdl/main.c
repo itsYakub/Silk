@@ -2,6 +2,10 @@
 // $ mkdir bin/
 // $ cd bin/
 // $ cmake ..
+//      > For debug build:
+//          $ cmake .. -DCMAKE_BUILD_TYPE=Debug
+//      > For release build:
+//          $ cmake .. -DCMAKE_BUILD_TYPE=Release
 // $ cmake --build .
 
 #include <stdbool.h>
@@ -9,12 +13,10 @@
 
 #include "bin/_deps/sdl2-src/include/SDL.h"
 #include "bin/_deps/sdl2-src/include/SDL_events.h"
-#include "bin/_deps/sdl2-src/include/SDL_pixels.h"
 #include "bin/_deps/sdl2-src/include/SDL_render.h"
-#include "bin/_deps/sdl2-src/include/SDL_timer.h"
+#include "bin/_deps/sdl2-src/include/SDL_scancode.h"
 #include "bin/_deps/sdl2-src/include/SDL_video.h"
 
-#define SILK_ALPHABLEND_DISABLE
 #define SILK_IMPLEMENTATION
 #include "../../silk.h"
 
@@ -32,7 +34,7 @@ if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         SDL_WINDOWPOS_CENTERED, 
         800, 
         600, 
-        0
+        SDL_WINDOW_RESIZABLE
     );
 
     if(window == NULL) {
@@ -64,8 +66,8 @@ if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         *renderer, 
         SDL_PIXELFORMAT_ABGR8888, 
         SDL_TEXTUREACCESS_STREAMING, 
-        800, 
-        600
+        SILK_PIXELBUFFER_WIDTH, 
+        SILK_PIXELBUFFER_HEIGHT
     );
 
 #elif defined (SILK_BYTEORDER_BIG_ENDIAN)
@@ -74,8 +76,8 @@ if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         *renderer, 
         SDL_PIXELFORMAT_RGBA8888, 
         SDL_TEXTUREACCESS_STREAMING, 
-        800, 
-        600
+        SILK_PIXELBUFFER_WIDTH, 
+        SILK_PIXELBUFFER_HEIGHT
     );
 
 #endif
@@ -93,7 +95,7 @@ if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
     return SILK_SUCCESS;
 }
 
-i32 SDLBlit(pixel* buffer, SDL_Renderer* renderer, SDL_Texture* texture) {
+i32 SDLBlit(pixel* buffer, SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture) {
     if(buffer == NULL) {
         silkLogErr("SDL: Passed a NULL parameter: buffer.");
 
@@ -108,8 +110,12 @@ i32 SDLBlit(pixel* buffer, SDL_Renderer* renderer, SDL_Texture* texture) {
         return SILK_FAILURE;
     }
 
-    vec2i sdl_renderer_size = { 0 };
-    SDL_GetRendererOutputSize(renderer, &sdl_renderer_size.x, &sdl_renderer_size.y);
+    // TODO(yakub):
+    // Fix the scaling of the texture
+    // Currently displaying the final rendered image to the screen is malfunctioning
+
+    vec2i sdl_window_size = { 0 };
+    SDL_GetWindowSize(window, &sdl_window_size.x, &sdl_window_size.y);
 
     SDL_Rect source_rect = {
         0,
@@ -121,22 +127,22 @@ i32 SDLBlit(pixel* buffer, SDL_Renderer* renderer, SDL_Texture* texture) {
     SDL_Rect destination_rect = {
         0,
         0,
-        sdl_renderer_size.x,
-        sdl_renderer_size.y
+        sdl_window_size.x,
+        sdl_window_size.y
     };
 
     SDL_UpdateTexture(
         texture,
-        &source_rect,
+        &destination_rect,
         buffer, 
         SILK_PIXELBUFFER_WIDTH * sizeof(pixel)
     );
-
+    
     SDL_RenderCopyEx(
         renderer, 
         texture, 
-        &source_rect, 
         &destination_rect,
+        &source_rect, 
         0.0,
         NULL,
         SDL_FLIP_NONE
@@ -174,12 +180,11 @@ int main(int argc, const string argv[]) {
     // Silk's pixel buffer
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
-    i32 rectangle_rotation = 0;
+    f32 rotation = 0.0f;
     
     const string text = "Hello, SDL2!";
     const i32 text_size = 4;
     const i32 text_spacing = 1;
-
 
     // SDL components
     SDL_Window*     sdl_window;
@@ -207,6 +212,12 @@ int main(int argc, const string argv[]) {
                 case SDL_QUIT: {
                     exit = true;
                 } break;
+
+                case SDL_KEYDOWN: {
+                    if(event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+                        silkLogInfo("%i, %i", sdl_window_size.x, sdl_window_size.y);
+                    }
+                }
             }
         }
 
@@ -214,8 +225,8 @@ int main(int argc, const string argv[]) {
 
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColorRegion(buffer, sdl_window_size, SILK_PIXELBUFFER_WIDTH, 0xffffffff);
-        
-        silkDrawCircle(
+
+        silkDrawStar(
             buffer, 
             (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
             SILK_PIXELBUFFER_WIDTH, 
@@ -224,6 +235,8 @@ int main(int argc, const string argv[]) {
                 sdl_window_size.y / 2
             }, 
             sdl_window_size.y / 8, 
+            rotation += 0.1f, 
+            5,
             0xff0000ff
         );
 
@@ -244,6 +257,7 @@ int main(int argc, const string argv[]) {
         // Displaying the graphics on the window
         SDLBlit(
             buffer, 
+            sdl_window,
             sdl_renderer, 
             sdl_texture
         );

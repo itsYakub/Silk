@@ -2,6 +2,10 @@
 // $ mkdir bin/
 // $ cd bin/
 // $ cmake ..
+//      > For debug build:
+//          $ cmake .. -DCMAKE_BUILD_TYPE=Debug
+//      > For release build:
+//          $ cmake .. -DCMAKE_BUILD_TYPE=Release
 // $ cmake --build .
 
 #include "./bin/_deps/raylib-build/raylib/include/raylib.h"
@@ -11,7 +15,7 @@
 #include "../../silk.h"
 
 i32 RaylibSetup(Texture* texture) {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(
         800, 
         600, 

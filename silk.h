@@ -1448,12 +1448,6 @@ SILK_API i32 silkDrawPixel(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i 
 }
 
 SILK_API i32 silkDrawLine(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i start, vec2i end, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     if(start.x < end.x) {
         silkVectorSwap(&start, &end);
     }
@@ -1479,12 +1473,6 @@ SILK_API i32 silkDrawLine(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i s
 }
 
 SILK_API i32 silkDrawRect(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     silkDrawRectPro(
         buffer,
         buf_size,
@@ -1500,12 +1488,6 @@ SILK_API i32 silkDrawRect(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i p
 }
 
 SILK_API i32 silkDrawRectPro(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     vec2i points[4] = {
         { 0 }, // top-left
         { 0 }, // top_right
@@ -1576,12 +1558,6 @@ SILK_API i32 silkDrawRectPro(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2
 }
 
 SILK_API i32 silkDrawRectLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, vec2i size, i32 angle, vec2i offset, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     vec2i points[4] = {
         { 0 }, // top-left
         { 0 }, // top_right
@@ -1637,12 +1613,6 @@ SILK_API i32 silkDrawRectLines(pixel* buffer, vec2i buf_size, i32 buf_stride, ve
 }
 
 SILK_API i32 silkDrawCircle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     i32 x0 = position.x - radius;
     i32 x1 = position.x + radius;
 
@@ -1668,12 +1638,6 @@ SILK_API i32 silkDrawCircle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i
 SILK_API i32 silkDrawCircleLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, pixel pix) {
     // Source:
     // https://www.geeksforgeeks.org/bresenhams-circle-drawing-algorithm/
-
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
 
     i32 x = 0;
     i32 y = radius;
@@ -1714,12 +1678,6 @@ SILK_API i32 silkDrawCircleLines(pixel* buffer, vec2i buf_size, i32 buf_stride, 
 SILK_API i32 silkDrawTriangle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
     // Source:
     // https://github.com/tsoding/olive.c/commit/633c657dbea3435a64114570ecb3f703fa276f28
-
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
 
     if(point_a.y > point_b.y) silkVectorSwap(&point_a, &point_b);
     if(point_a.y > point_c.y) silkVectorSwap(&point_a, &point_c);
@@ -1789,12 +1747,6 @@ SILK_API i32 silkDrawTriangle(pixel* buffer, vec2i buf_size, i32 buf_stride, vec
 }
 
 SILK_API i32 silkDrawTriangleLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i point_a, vec2i point_b, vec2i point_c, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     if(point_a.y > point_b.y) silkVectorSwap(&point_a, &point_b);
     if(point_a.y > point_c.y) silkVectorSwap(&point_a, &point_c);
     if(point_b.y > point_c.y) silkVectorSwap(&point_b, &point_c);
@@ -1845,12 +1797,6 @@ SILK_API i32 silkDrawTriangleEquilateral(pixel* buffer, vec2i buf_size, i32 buf_
 }
 
 SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     vec2i points[3] = {
         { position.x, position.y - radius },                                // point: 0 (top)
         { position.x - sqrt(3) * radius / 2, position.y + radius / 2 },     // point: 1 (left)
@@ -1880,12 +1826,6 @@ SILK_API i32 silkDrawTriangleEquilateralLines(pixel* buffer, vec2i buf_size, i32
 }
 
 SILK_API i32 silkDrawPolygon(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     if(n < 3) {
         n = 3;
     }
@@ -1919,12 +1859,6 @@ SILK_API i32 silkDrawPolygon(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2
 }
 
 SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i position, i32 radius, i32 angle, i32 n, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     if(n < 3) {
         n = 3;
     }
@@ -1965,12 +1899,6 @@ SILK_API i32 silkDrawStar(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2i p
 }
 
 SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     if(!img) {
         silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
 
@@ -1992,12 +1920,6 @@ SILK_API i32 silkDrawImage(pixel* buffer, vec2i buf_size, i32 buf_stride, image*
 }
 
 SILK_API i32 silkDrawImageScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i size_dest) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     if(!img) {
         silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
 
@@ -2019,12 +1941,6 @@ SILK_API i32 silkDrawImageScaled(pixel* buffer, vec2i buf_size, i32 buf_stride, 
 }
 
 SILK_API i32 silkDrawImagePro(pixel* buffer, vec2i buf_size, i32 buf_stride, image* img, vec2i position, vec2i offset, vec2i size_dest, pixel tint) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     if(!img) {
         silkAssignErrorMessage(SILK_ERR_BUF_IMG_INVALID);
 
@@ -2059,12 +1975,6 @@ SILK_API i32 silkDrawImagePro(pixel* buffer, vec2i buf_size, i32 buf_stride, ima
 }
 
 SILK_API i32 silkDrawTextDefault(pixel* buffer, vec2i buf_size, i32 buf_stride, const char* text, vec2i position, i32 font_size, i32 font_spacing, pixel pix) {
-    if(buffer == NULL) {
-        silkAssignErrorMessage(SILK_ERR_BUF_INVALID);
-
-        return SILK_FAILURE;
-    }
-
     vec2i glyph_position = {
         position.x / font_size,
         position.y / font_size
