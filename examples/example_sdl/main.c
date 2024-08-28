@@ -180,7 +180,7 @@ int main(int argc, const string argv[]) {
     // Silk's pixel buffer
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
-    f32 rotation = 0.0f;
+    i32 rotation = 0.0f;
     
     const string text = "Hello, SDL2!";
     const i32 text_size = 4;
@@ -235,7 +235,7 @@ int main(int argc, const string argv[]) {
                 sdl_window_size.y / 2
             }, 
             sdl_window_size.y / 8, 
-            rotation += 0.1f, 
+            rotation++, 
             5,
             0xff0000ff
         );

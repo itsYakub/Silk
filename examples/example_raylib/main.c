@@ -85,7 +85,7 @@ int main(int argc, const string argv[]) {
     // Silk's pixel buffer
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT] = { 0 };
 
-    i32 rectangle_rotation = 0;
+    i32 rotation = 0;
     
     const string text = "Hello, raylib!";
     const i32 text_size = 4;
@@ -117,7 +117,7 @@ int main(int argc, const string argv[]) {
                 GetScreenHeight() / 4,
                 GetScreenHeight() / 4
             }, 
-            rectangle_rotation++, 
+            rotation++, 
             (vec2i) {
                 GetScreenHeight() / 8,
                 GetScreenHeight() / 8

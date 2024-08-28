@@ -12,7 +12,7 @@
 int main(int argc, const string argv[]) {
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
-    i32 rectangle_rotation = 45;
+    i32 rotation = 45;
     
     const string text = "Hello, PPM!";
     const i32 text_size = 4;
@@ -32,7 +32,7 @@ int main(int argc, const string argv[]) {
             SILK_PIXELBUFFER_CENTER_Y / 2,
             SILK_PIXELBUFFER_CENTER_Y / 2
         }, 
-        rectangle_rotation, 
+        rotation, 
         (vec2i) {
             SILK_PIXELBUFFER_CENTER_Y / 4,
             SILK_PIXELBUFFER_CENTER_Y / 4

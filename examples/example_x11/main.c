@@ -156,7 +156,7 @@ i32 X11Close(Display* display, XImage* image) {
 i32 main(i32 argc, const string argv[]) {
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
 
-    i32 rectangle_rotation = 0;
+    i32 rotation = 0;
     
     const string text = "Hello, X11!";
     const i32 text_size = 4;
@@ -204,7 +204,7 @@ i32 main(i32 argc, const string argv[]) {
                 x11_window_attributes.height / 2
             }, 
             x11_window_attributes.height / 8, 
-            rectangle_rotation++, 
+            rotation++, 
             5, 
             0xffff0000
         );

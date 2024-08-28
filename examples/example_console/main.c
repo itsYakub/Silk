@@ -49,7 +49,7 @@ i32 ConsoleBlit(pixel* buf) {
 
 i32 main(int argc, const string argv[]) {
     pixel buffer[SILK_PIXELBUFFER_WIDTH * SILK_PIXELBUFFER_HEIGHT];
-    f32 rotation = 0.0f;
+    i32 rotation = 0.0f;
 
     while(true) {
         silkClearPixelBuffer(buffer);
@@ -59,7 +59,7 @@ i32 main(int argc, const string argv[]) {
             SILK_PIXELBUFFER_WIDTH, 
             (vec2i) { SILK_PIXELBUFFER_WIDTH / 2, SILK_PIXELBUFFER_HEIGHT / 2 }, 
             (vec2i) { SILK_PIXELBUFFER_HEIGHT / 4, SILK_PIXELBUFFER_HEIGHT / 4 }, 
-            rotation += 0.05f,
+            rotation++,
             (vec2i) { SILK_PIXELBUFFER_HEIGHT / 8, SILK_PIXELBUFFER_HEIGHT / 8 },
             0xffffffff
         );
