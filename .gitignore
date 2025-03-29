@@ -54,3 +54,7 @@ dkms.conf
 # Build directories
 **/bin/
 **/build/
+
+# editor files
+*.swp
+*.swo

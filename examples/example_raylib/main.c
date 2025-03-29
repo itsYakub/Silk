@@ -104,27 +104,21 @@ int main(int argc, const string argv[]) {
     while(!WindowShouldClose()) {
         // Clearing the silk's pixel buffer
         silkClearPixelBufferColorRegion(buffer, (vec2i) { GetScreenWidth(), GetScreenHeight() }, SILK_PIXELBUFFER_WIDTH, 0xffffffff);
-        
-        silkDrawRectPro(
-            buffer, 
+    
+		silkDrawPolygon(
+			buffer,
             (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },
-            SILK_PIXELBUFFER_WIDTH, 
+            SILK_PIXELBUFFER_WIDTH,
             (vec2i) {
                 GetScreenWidth() / 2,
                 GetScreenHeight() / 2
-            }, 
-            (vec2i) {
-                GetScreenHeight() / 4,
-                GetScreenHeight() / 4
-            }, 
-            rotation++, 
-            (vec2i) {
-                GetScreenHeight() / 8,
-                GetScreenHeight() / 8
-            }, 
-            0xff0000ff
-        );
-
+            },
+			64,
+			0,
+			5,
+			0xff0000ff
+		);		
+		   	
         silkDrawTextDefault(
             buffer, 
             (vec2i) { SILK_PIXELBUFFER_WIDTH, SILK_PIXELBUFFER_HEIGHT },

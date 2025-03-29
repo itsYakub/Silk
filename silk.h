@@ -379,8 +379,8 @@ SILK_API string silkGetError(void);
 #define SILK_ERR_BUF_INVALID "Passed the invalid pixel buffer."
 #define SILK_ERR_BUF_IMG_INVALID "Passed the invalid image buffer."
 #define SILK_ERR_BUF_ACCESS_OUT_OF_BOUNDS "Trying to access the out-of-bounds buffer address."
-#define SILK_ERR_FILE_OPEN_FAIL "Couldn't open the file."
-#define SILK_ERR_FILE_OPEN_FAIL_MSG(MSG) "Couldn't open the file: " MSG
+#define SILK_ERR_FILE_OPEN_FAIL "Couldn't open a file."
+#define SILK_ERR_FILE_OPEN_FAIL_MSG(MSG) "Couldn't open a file: " MSG
 #define SILK_ERR_MODULE_NOT_INCLUDED "Couldn't load 3rd-party module."
 #define SILK_ERR_MODULE_NOT_INCLUDED_MSG(MSG) "Couldn't load 3rd-party module:" MSG
 #define SILK_ERR_IMAGE_LOAD_FAIL "Couldn't load an image."
@@ -388,6 +388,7 @@ SILK_API string silkGetError(void);
 #define SILK_ERR_IMAGE_SAVE_FAIL "Couldn't save an image."
 #define SILK_ERR_IMAGE_INVALID_FILE_EXT "Invalid file extension provided."
 #define SILK_ERR_ALLOCATION_FAIL "Memory allocation failure."
+#define SILK_ERR_OUT_OF_BOUNDS "Index out of bounds."
 
 // --------------------------------------------------------------------------------------------------------------------------------
 // SECTION: Charset
@@ -1770,9 +1771,12 @@ SILK_API i32 silkDrawPolygon(pixel* buffer, vec2i buf_size, i32 buf_stride, vec2
     if(n < 3) {
         n = 3;
     }
+	else if (n > 360) {
+		n = 360;
+	}
 
     i32 theta = 360 / n;
-    vec2i points[n];
+    vec2i points[360];
 
     // Calculating the positions of each point of our polygon
     for(i32 i = 0; i < n; i++) {
